@@ -1,0 +1,50 @@
+package protocol;
+
+message Test1 {
+  required int32 a = 1;
+}
+
+message Test1_2 {
+  required int32 a = 1;
+}
+
+message Test2 {
+  required string b = 2;
+}
+
+message Test3 {
+  required Test1 c = 3;
+}
+
+message Test4 {
+  repeated int32 d = 4;
+  extensions 0 to max;
+}
+
+message Test5 {
+  extensions 1;
+  required int32 a = 1;
+  required int32 b = 2;
+}
+
+message Test6 {
+  required int32 a = 1;
+  message SubMessage {
+    required int32 a = 1;
+  }
+}
+
+message Test7 {
+  message SubMessage {
+    required int32 a = 1;
+  }
+  required SubMessage d = 1;
+}
+
+message Test8 {
+  message SubMessage {
+    required string name = 1;
+    required int32 value = 2;
+  }
+  repeated SubMessage values = 1;
+}

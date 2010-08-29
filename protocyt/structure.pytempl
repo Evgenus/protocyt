@@ -1,0 +1,53 @@
+% for message in this.messages_order:
+${this.messages[message].render_structure(state)}
+% endfor
+
+class ${this.fullname}(BaseMessage):
+    __slots__ = ${repr(tuple(this.fields_by_name))}
+    _extended_fields_ = ${repr(set(this.extended_fields))}
+    def __init__(self,
+% for number, field in this.fields_required:
+        ${field.name}, # ${''.join(field.pretty(state))}
+% endfor
+% for number, field in this.fields_repeated:
+        ${field.name}=[], # ${''.join(field.pretty(state))}
+% endfor
+% for number, field in this.fields_optional:
+        ${field.name}=${field.default}, # ${''.join(field.pretty(state))}
+% endfor
+        ):
+% for index, field in this.fields_required:
+        self.${field.name} = ${field.name}
+% endfor
+% for index, field in this.fields_repeated:
+        self.${field.name} = ${field.name}
+% endfor
+% for number, field in this.fields_optional:
+        if ${field.name} != ${field.default}:
+            self.${field.name} = ${field.name}
+% endfor
+        pass
+
+    def serialize(self, array):
+        serialize_${this.fullname}(array, self)
+
+    def deserialize(cls, array):
+        return wrapped_deserialize_${this.fullname}(array)
+    deserialize = classmethod(deserialize)
+
+    def __eq__(self, other_msg):
+        return (isinstance(other_msg, ${this.fullname})
+% for index, field in this.fields_required:
+            and self.${field.name} == other_msg.${field.name}
+% endfor
+% for index, field in this.fields_repeated:
+            and self.${field.name} == other_msg.${field.name}
+% endfor
+% for number, field in this.fields_optional:
+            and getattr(self, "${field.name}", ${field.default}) == getattr(other_msg, "${field.name}", ${field.default})
+% endfor
+            )
+
+% for name, message in this.messages.iteritems():
+    ${name} = ${message.fullname}
+% endfor

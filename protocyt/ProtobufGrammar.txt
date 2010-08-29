@@ -1,0 +1,47 @@
+file_input: ( NEWLINE | message | extend | enum | import | package | option | service | ";" )* ENDMARKER
+
+import: "import" STRING ";"
+
+package: "package" indent ( "." indent )* ";"
+
+option: "option" optionBody ";"
+
+optionBody: indent ( "." indent )* "=" constant
+
+message: "message" indent messageBody
+
+extend: "extend" userType "{" ( groupOrField | ";" )* "}"
+
+enum: "enum" indent "{" ( option | enumField | ";" )* "}"
+
+enumField: indent "=" intlit ";"
+
+service: "service" indent "{" ( option | rpc | ";" )* "}"
+
+rpc: "rpc" indent "(" userType ")" "returns" "(" userType ")" ";"
+
+messageBody: "{" ( enum | message | extend | extensions | groupOrField | option | ";" )* "}"
+
+groupOrField: label (groupTail | fieldTail)
+groupTail: "group" indent "=" NUMBER messageBody
+fieldTail: type indent "=" NUMBER [ "[" fieldOption ( "," fieldOption )* "]" ] ";"
+
+fieldOption: optionBody | "default" "=" constant
+
+extensions: "extensions" extension ( "," extension )* ";"
+
+extension: NUMBER [ "to" ( NUMBER | "max" ) ]
+
+label: "required" | "optional" | "repeated"
+
+type: ( "double" | "float" | "int32" | "int64" | "uint32" | "uint64"
+       | "sint32" | "sint64" | "fixed32" | "fixed64" | "sfixed32" | "sfixed64"
+       | "bool" | "string" | "bytes" | userType )
+
+userType: ["."] indent ( "." indent )*
+
+intlit: ['-' | '+'] (NUMBER | 'inf' | 'nan')
+
+constant: indent | intlit | STRING | "true" | "false"
+
+indent: NAME
