@@ -78,13 +78,15 @@ __names_${this.fullname}[${index}] = NULL
 % endfor
 
 cdef object deserialize_${this.fullname}(char **start, char *end):
-    cdef uint64_t type, n, t
+    cdef uint64_t n, t, size
+    cdef uint32_t type
     cdef object self = object.__new__(${this.fullname})
     cdef char *other_start
     cdef parsefunc decoder
     cdef char *name
     while start[0]<end:
-        type = raw_deserialize_type(start, end)
+        if raw_deserialize_type(start, end, &type):
+            raise DecodeError()
         n = type >> 3
         t = type & 7
         if n > ${this.max_index}:
@@ -93,14 +95,18 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
         if name == NULL:
             decoder = __decoder_bytype[t]
             if t == 2:
-                decoder(start, start[0]+raw_deserialize_uint64(start, end))
+                if raw_deserialize_uint64(start, end, &size):
+                    raise DecodeError()
+                decoder(start, start[0] + size)
             else:
                 decoder(start, end)
         else:
             decoder = __table_${this.fullname}[n]
             if t == 2:
+                if raw_deserialize_uint64(start, end, &size):
+                    raise DecodeError()
                 PyObject_SetAttrString(self, name,
-                    decoder(start, start[0]+raw_deserialize_uint64(start, end))
+                    decoder(start, start[0] + size)
                     )
             else:
                 PyObject_SetAttrString(self, name,
@@ -110,9 +116,12 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
 
 cdef object repeat_deserialize_${this.fullname}(char **start, char *end):
     cdef object value = []
+    cdef uint64_t size
     while start[0] < end:
+        if raw_deserialize_uint64(start, end, &size):
+            raise DecodeError()
         value.append(deserialize_${this.fullname}(
-            start, start[0] + raw_deserialize_uint64(start, end)))
+            start, start[0] + size))
     return value
 
 cdef object wrapped_deserialize_${this.fullname}(object array):

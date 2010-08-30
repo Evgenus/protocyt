@@ -137,18 +137,14 @@ cdef inline serialize_uint32(object array, uint32_t n):
 
     if 0!=n:
         while True:
-            #get the lowest 7 bits
-            rem = <char>(n&((1<<7)-1))
-            #shift 7 bits to the left
+            rem = <char>(n & 0x7f)
             n = n>>7
             if 0==n:
-                #reached the end
-                #signal no need to continue with 0 msb
                 buff[0] = <char> rem
                 buff+=1
                 break
             else:
-                rem = rem | (1<<7)
+                rem = rem | 0x80
                 buff[0] = <char> rem
                 buff+=1
     else:
@@ -156,7 +152,7 @@ cdef inline serialize_uint32(object array, uint32_t n):
         buff+=1
     PyByteArray_Resize(array, buff - PyByteArray_AS_STRING(array))
 
-cdef inline uint32_t raw_deserialize_uint32(char **start, char *end):
+cdef inline int raw_deserialize_uint32(char **start, char *end, uint32_t *result):
     cdef uint32_t value = 0
     cdef char byte
     cdef char *pointer = start[0]
@@ -169,12 +165,17 @@ cdef inline uint32_t raw_deserialize_uint32(char **start, char *end):
         if byte & 0x80 == 0:
             break
         if pointer == end:
-            raise DecodeError()
+            return -1
     start[0] = pointer
-    return value
+    result[0] = value
+    return 0
 
 cdef object deserialize_uint32(char **pointer, char *end):
-    return PyInt_FromLong(raw_deserialize_uint32(pointer, end))
+    cdef uint32_t result
+    if raw_deserialize_uint32(pointer, end, &result):
+        raise DecodeError()
+    return PyInt_FromLong(result)
+
 ${make_repeatable('deserialize_uint32')}
 
 
@@ -186,7 +187,11 @@ cdef inline serialize_int32(object array, int32_t n):
     serialize_uint32(array, <uint32_t>n)
 
 cdef object deserialize_int32(char **pointer, char *end):
-    return PyInt_FromLong(<int32_t>raw_deserialize_uint32(pointer, end))
+    cdef int32_t result
+    if raw_deserialize_uint32(pointer, end, <uint32_t*>&result):
+        raise DecodeError()
+    return PyInt_FromLong(result)
+
 ${make_repeatable('deserialize_int32')}
 
 
@@ -199,8 +204,11 @@ cdef inline serialize_sint32(object array, int32_t n):
     serialize_uint32(array, un)
 
 cdef object deserialize_sint32(char **pointer, char *end):
-    cdef uint32_t un = raw_deserialize_uint32(pointer, end)
+    cdef uint32_t un
+    if raw_deserialize_uint32(pointer, end, &un):
+        raise DecodeError()
     return PyInt_FromLong(<int32_t>((un>>1) ^ (un<<31)))
+
 ${make_repeatable('deserialize_sint32')}
 
 
@@ -217,7 +225,7 @@ cdef inline serialize_uint64(object array, uint64_t n):
     if 0!=n:
         while( True):
             #get the lowest 7 bits
-            rem = <char>(n&((1<<7)-1))
+            rem = <char>(n & 0x7f)
             #shift 7 bits to the left
             n = n>>7
             if 0==n:
@@ -227,7 +235,7 @@ cdef inline serialize_uint64(object array, uint64_t n):
                 buff+=1
                 break
             else:
-                rem = rem | (1<<7)
+                rem = rem | 0x80
                 buff[0] = <char> rem
                 buff+=1
     else:
@@ -235,7 +243,7 @@ cdef inline serialize_uint64(object array, uint64_t n):
         buff+=1
     PyByteArray_Resize(array, buff - PyByteArray_AS_STRING(array))
 
-cdef inline uint64_t raw_deserialize_uint64(char **start, char *end):
+cdef inline int raw_deserialize_uint64(char **start, char *end, uint64_t *result):
     cdef uint64_t value = 0
     cdef char byte
     cdef char *pointer = start[0]
@@ -248,12 +256,21 @@ cdef inline uint64_t raw_deserialize_uint64(char **start, char *end):
         if byte & 0x80 == 0:
             break
         if pointer == end:
-            raise DecodeError()
+            return -1
     start[0] = pointer
-    return value
+    result[0] = value
+    return 0
 
 cdef object deserialize_uint64(char **pointer, char *end):
-    return PyLong_FromLongLong(raw_deserialize_uint64(pointer, end))
+    cdef uint64_t result
+    if raw_deserialize_uint64(pointer, end, &result):
+        raise DecodeError()
+    return PyLong_FromLongLong(result)
+
+${make_repeatable('deserialize_uint64')}
+
+
+
 
 ${this.title(' ', 'int64')}
 
@@ -261,7 +278,15 @@ cdef inline serialize_int64(object array, int64_t n):
     serialize_uint64(array, <uint64_t>n)
 
 cdef object deserialize_int64(char **pointer, char *end):
-    return PyLong_FromLongLong(<int64_t>raw_deserialize_uint64(pointer, end))
+    cdef int64_t result
+    if raw_deserialize_uint64(pointer, end, <uint64_t*>&result):
+        raise DecodeError()
+    return PyLong_FromLongLong(result)
+
+${make_repeatable('deserialize_int64')}
+
+
+
 
 ${this.title(' ', 'sint64')}
 
@@ -270,8 +295,15 @@ cdef inline serialize_sint64(object array, int64_t n):
     serialize_uint64(array, un)
 
 cdef object deserialize_sint64(char **pointer, char *end):
-    cdef uint64_t un = raw_deserialize_uint64(pointer, end)
+    cdef uint64_t un
+    if raw_deserialize_uint64(pointer, end, &un):
+        raise DecodeError()
     return PyLong_FromLongLong(<int64_t>((un>>1) ^ (un<<63)))
+
+${make_repeatable('deserialize_sint64')}
+
+
+
 
 ${this.title(' ', 'fuint32')}
 
@@ -282,10 +314,10 @@ cdef inline serialize_fuint32(object array, uint32_t n):
     cdef char *buff = PyByteArray_AS_STRING(array) + size
 
     for i from 0 <= i < 4:
-        rem = n&((1<<8)-1)
-        n=n>>8;
+        rem = n & 0x7f
+        n = n >> 8
         buff[0] = <char> rem
-        buff+=1
+        buff += 1
 
 cdef object deserialize_fuint32(char **pointer, char *end):
     pass
@@ -299,10 +331,10 @@ cdef inline serialize_fint32(object array, int32_t n):
     cdef char *buff = PyByteArray_AS_STRING(array) + size
 
     for i from 0 <= i < 4:
-        rem = n&((1<<8)-1)
-        n=n>>8;
+        rem = n & 0x7f
+        n = n >> 8
         buff[0] = <char> rem
-        buff+=1
+        buff += 1
 
 cdef object deserialize_fint32(char **pointer, char *end):
     pass
@@ -316,10 +348,10 @@ cdef inline serialize_fuint64(object array, uint64_t n):
     cdef char *buff = PyByteArray_AS_STRING(array) + size
 
     for i from 0 <= i < 8:
-        rem = n&((1<<8)-1)
-        n=n>>8;
+        rem = n & 0x7f
+        n = n >> 8
         buff[0] = <char> rem
-        buff+=1
+        buff += 1
 
 cdef object deserialize_fuint64(char **pointer, char *end):
     pass
@@ -333,10 +365,10 @@ cdef inline serialize_fint64(object array, int64_t n):
     cdef char *buff = PyByteArray_AS_STRING(array) + size
 
     for i from 0 <= i < 8:
-        rem = n&((1<<8)-1)
-        n=n>>8;
+        rem = n & 0x7f
+        n = n >> 8
         buff[0] = <char> rem
-        buff+=1
+        buff += 1
 
 cdef object deserialize_fint64(char **pointer, char *end):
     pass
@@ -351,6 +383,11 @@ cdef inline serialize_bytes(object array, object n):
 cdef object deserialize_bytes(char **pointer, char *end):
     pointer[0] = end
 
+${make_repeatable('deserialize_bytes')}
+
+
+
+
 ${this.title(' ', 'string')}
 
 cdef inline serialize_string(object array, object n):
@@ -361,9 +398,14 @@ cdef object deserialize_string(char **pointer, char *end):
     pointer[0] = end
     return value
 
+${make_repeatable('deserialize_string')}
+
+
+
+
 ${this.title(' ', 'bool')}
 
-cdef inline serialize_bool(object array, bool b):
+cdef inline serialize_bool(object array, int b):
     cdef Py_ssize_t size = PyByteArray_GET_SIZE(array)
     PyByteArray_Resize(array, size + 1)
     cdef char *buff = PyByteArray_AS_STRING(array) + size
@@ -378,14 +420,21 @@ ${this.title(' ', 'type')}
 cdef inline serialize_type(array, unsigned char t, uint32_t n):
     serialize_uint32(array, n<<3|t)
 
-cdef inline uint32_t raw_deserialize_type(char **pointer, char *end):
-    return raw_deserialize_uint32(pointer, end)
+cdef inline uint32_t raw_deserialize_type(char **pointer, char *end, uint32_t *result):
+    return raw_deserialize_uint32(pointer, end, result)
 
 cdef object deserialize_type(char **pointer, char *end):
-    cdef uint32_t value = raw_deserialize_type(pointer, end)
+    cdef uint32_t value
+    if raw_deserialize_type(pointer, end, &value):
+        raise DecodeError()
     cdef uint32_t n = value >> 3
     cdef uint32_t t = value & 7
     return (PyInt_FromLong(t), PyInt_FromLong(n))
+
+${make_repeatable('deserialize_type')}
+
+
+
 
 ${this.title(' ', 'float')}
 
