@@ -10,7 +10,7 @@ cdef object repeat_${name}(char **pointer, char *end):
     return value
 <%endmacro>
 
-from python cimport *
+from cpython cimport *
 
 ${this.title('_', 'EXTERNALS')}
 
