@@ -83,6 +83,7 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
     cdef char *other_start
     cdef parsefunc decoder
     cdef char *name
+    cdef uint64_t len
     while start[0]<end:
         type = raw_deserialize_type(start, end)
         n = type >> 3
@@ -99,8 +100,11 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
         else:
             decoder = __table_${this.fullname}[n]
             if t == 2:
+                len = raw_deserialize_uint64(start, end)
+                if PyErr_Occurred():
+                    raise DecodeError()
                 PyObject_SetAttrString(self, name,
-                    decoder(start, start[0]+raw_deserialize_uint64(start, end))
+                    decoder(start, start[0]+len)
                     )
             else:
                 PyObject_SetAttrString(self, name,
