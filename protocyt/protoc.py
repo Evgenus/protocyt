@@ -11,6 +11,11 @@ from .compiler import CoreGenerator
 from .templatable import DocTemplatable
 from . import classes
 
+try:
+    import sysconfig
+except ImportError:
+    from distutils import sysconfig
+
 def from_file(filename, output_dir=None):
     name = filename.filename
     with open(filename.str()) as stream:
@@ -60,25 +65,26 @@ def from_source(source, name=None, output_dir=None):
 
     cython_compile(pyx_file.str())
 
-    compiler = distutils.ccompiler.new_compiler()
+    compiler = distutils.ccompiler.new_compiler(verbose=10)
 
-    compiler.add_include_dir(str(protocyt_dir / 'includes'))
+    if sys.platform == 'win32':
+        compiler.add_include_dir(str(protocyt_dir / 'includes'))
 
     python_path = Path.from_file(sys.exec_prefix)
-    compiler.add_include_dir(str(python_path / 'include'))
-
-    compiler.add_library_dir(str(python_path / 'libs'))
+    compiler.add_include_dir(sysconfig.get_python_inc())
+    compiler.add_library_dir(sysconfig.get_python_lib())
 
     object_files = compiler.compile([path.add_ext('.c').str()],
+        extra_postargs=['-fPIC'],
         output_dir=temp_dir.str())
     compiler.link_shared_lib(object_files, name, output_dir=temp_dir.str())
 
-    out_file = (output_dir / name).add_ext('.pyd')
+    out_file = (output_dir / name).add_ext(sysconfig.get_config_var('SO'))
     if out_file.exists():
         out_file.remove()
 
     compiler.move_file(
-        compiler.shared_object_filename(path.str()),
+        compiler.library_filename(path.str(), 'shared'),
         out_file.str()
         )
 
@@ -100,5 +106,6 @@ def make_parser():
     return parser
 
 if __name__ == '__main__':
+    from distutils import log
+    log.set_verbosity(1000)
     main(make_parser().parse_args())
-
