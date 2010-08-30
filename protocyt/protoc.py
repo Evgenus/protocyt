@@ -69,10 +69,11 @@ def from_source(source, name=None, output_dir=None):
 
     if sys.platform == 'win32':
         compiler.add_include_dir(str(protocyt_dir / 'includes'))
+        libs_dir = Path.from_file(sysconfig.get_config_var('BINDIR')) / 'libs'
+        compiler.add_library_dir(libs_dir.str())
 
     python_path = Path.from_file(sys.exec_prefix)
     compiler.add_include_dir(sysconfig.get_python_inc())
-    compiler.add_library_dir(sysconfig.get_python_lib())
 
     object_files = compiler.compile([path.add_ext('.c').str()],
         extra_postargs=['-fPIC'],
@@ -106,6 +107,4 @@ def make_parser():
     return parser
 
 if __name__ == '__main__':
-    from distutils import log
-    log.set_verbosity(1000)
     main(make_parser().parse_args())
