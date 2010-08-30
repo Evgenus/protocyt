@@ -122,6 +122,9 @@ class Enum(object):
         yield 'Enum: {name}'.format(**self.__dict__)
 
 class Part(object):
+    '''
+    Basic renderable type
+    '''
     def indent1(self, line, tab=1):
         return '    '*tab+line
     def indent(self, text, tab=1):
@@ -156,6 +159,9 @@ class Extension(object):
         return range(start, end+1)
 
 class Compond(Part):
+    '''
+    Base class for compound entities like protocol and message
+    '''
     def __init__(self):
         self.messages = {}
         self.enums = {}
@@ -174,6 +180,9 @@ class Compond(Part):
                 yield self.indent1(part)
 
 class Message(Compond):
+    '''
+    Represents single message
+    '''
     template = ENVIRONMENT.from_file(
         Path.from_file(__file__).up() / 'message.pytempl')
     structure = ENVIRONMENT.from_file(
