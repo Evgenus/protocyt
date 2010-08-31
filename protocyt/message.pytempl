@@ -89,29 +89,28 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
             raise DecodeError()
         n = type >> 3
         t = type & 7
-        if n > ${this.max_index}:
-            raise DecodeError()
-        name = __names_${this.fullname}[n]
-        if name == NULL:
-            decoder = __decoder_bytype[t]
-            if t == 2:
-                if raw_deserialize_uint64(start, end, &size):
-                    raise DecodeError()
-                decoder(start, start[0] + size)
-            else:
-                decoder(start, end)
+        if n <= ${this.max_index}:
+            name = __names_${this.fullname}[n]
+            if name != NULL:
+                decoder = __table_${this.fullname}[n]
+                if t == 2:
+                    if raw_deserialize_uint64(start, end, &size):
+                        raise DecodeError()
+                    PyObject_SetAttrString(self, name,
+                        decoder(start, start[0] + size)
+                        )
+                else:
+                    PyObject_SetAttrString(self, name,
+                        decoder(start, end)
+                        )
+                continue
+        decoder = __decoder_bytype[t]
+        if t == 2:
+            if raw_deserialize_uint64(start, end, &size):
+                raise DecodeError()
+            decoder(start, start[0] + size)
         else:
-            decoder = __table_${this.fullname}[n]
-            if t == 2:
-                if raw_deserialize_uint64(start, end, &size):
-                    raise DecodeError()
-                PyObject_SetAttrString(self, name,
-                    decoder(start, start[0] + size)
-                    )
-            else:
-                PyObject_SetAttrString(self, name,
-                    decoder(start, end)
-                    )
+            decoder(start, end)
     return self
 
 cdef object repeat_deserialize_${this.fullname}(char **start, char *end):
