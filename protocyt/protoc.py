@@ -89,6 +89,8 @@ def from_source(source, name=None, output_dir=None):
         out_file.str()
         )
 
+    temp_dir.remove()
+
 def main(options):
     filename = Path.from_file(options.input)
     if options.out_dir is None:

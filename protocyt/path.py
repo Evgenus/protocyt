@@ -6,6 +6,8 @@ Holding Path class.
 import os
 import urlparse
 import os.path
+import glob
+import shutil
 # internal
 from .templatable import DocTemplatable
 
@@ -319,7 +321,10 @@ class Path(object):
         Removes file or directory at instance path.
         If path is not exists OSError will be raisen.
         """
-        return os.remove(self.str())
+        if self.isfile():
+            return os.remove(self.str())
+        else:
+            return shutil.rmtree(self.str())
 
     def open(self, *args):
         """
@@ -336,6 +341,10 @@ class Path(object):
         for root, _, files in generator:
             for name in files:
                 yield self.__class__.from_file(root, name)
+
+    def glob(self, pattern):
+        for path in glob.iglob(str(self / pattern)):
+            yield self.__class__.from_file(path)
 
     @classmethod
     def from_file(cls, *paths):
