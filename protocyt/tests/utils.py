@@ -16,7 +16,7 @@ class BaseTestCase(unittest.TestCase):
         self.index = index
 
     def get_name(self):
-        return '{0}_{1}_{2:X}'.format(
+        return '{0}_{1}_{2:02d}'.format(
             self.__class__.__name__,
             self.tested_type,
             self.index
@@ -27,16 +27,16 @@ class BaseTestCase(unittest.TestCase):
         protoc.from_source(
             inspect.getdoc(self).format(type=self.tested_type),
             name,
-            path.Path.from_file(__file__).up()
+            path.Path.from_file(__file__).up(),
+            check=True,
             )
-        module = __import__('protocyt.tests.{0}'.format(name))
-        self.module = getattr(module.tests, name)
+        self.module = __import__(name, globals(), locals(), [], -1)
 
     def tearDown(self):
         del sys.modules[self.module.__name__]
 
     def __str__(self):
-        return "{0}.{1}.{2}_{3}({4!r})".format(
+        return "{0}.{1}.{2}_{3:02d}({4!r})".format(
             self.__class__.__module__,
             self.__class__.__name__,
             self.tested_type,

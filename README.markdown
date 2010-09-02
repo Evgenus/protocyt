@@ -4,7 +4,7 @@ Testing
 To check functionality of protocy you have to compile protocol for tests after
 instalation executing:
 
-    python -m protocyt.protoc protocyt/tests/protocol.proto
+    python -m protocyt.tests.main
     
 Then run tests using `nose`
 
