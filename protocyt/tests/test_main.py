@@ -37,6 +37,8 @@ class _sfixed64(utils.TestSuite):
 class _bool(utils.TestSuite):
     tested_values = [False, True]
 
+class _string(utils.TestSuite):
+    tested_values = ['', 'testing', ':)'*300]
 
 def make_float(value):
     return struct.unpack('f', struct.pack('f', value))[0]

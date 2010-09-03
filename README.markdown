@@ -1,20 +1,18 @@
 Testing
 -------
 
-To check functionality of protocy you have to compile protocol for tests after
-instalation executing:
+Standart way to run tests:
 
-    python -m protocyt.tests.main
+    python -m protocyt.tests.test_main
     
-Then run tests using `nose`
+Runnting tests using `nose`:
 
     nosetests protocyt
 
-Standart unittest are not provided yet.
 
 Dependencies
 ------------
 
  - cython >= 0.13
- - jinja2
+ - jinja2 >= 2.5
  - argparse

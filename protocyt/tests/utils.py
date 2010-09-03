@@ -27,13 +27,15 @@ class BaseTestCase(unittest.TestCase):
         protoc.from_source(
             inspect.getdoc(self).format(type=self.tested_type),
             name,
-            path.Path.from_file(__file__).up(),
+            path.Path.from_file(__file__).up() / 'modules',
             check=True,
             )
-        self.module = __import__(name, globals(), locals(), [], -1)
+        module = __import__('modules.' + name, globals(), locals(), [], -1)
+        self.module = getattr(module, name)
 
     def tearDown(self):
-        del sys.modules[self.module.__name__]
+        if self.module.__name__ in sys.modules:
+            del sys.modules[self.module.__name__]
 
     def __str__(self):
         return "{0}.{1}.{2}_{3:02d}({4!r})".format(

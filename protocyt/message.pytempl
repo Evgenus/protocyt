@@ -86,7 +86,7 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
     cdef char *name
     while start[0]<end:
         if raw_deserialize_type(start, end, &type):
-            raise DecodeError()
+            raise makeDecodeError(start[0])
         n = type >> 3
         t = type & 7
         if n <= ${this.max_index}:
@@ -95,7 +95,9 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
                 decoder = __table_${this.fullname}[n]
                 if t == 2:
                     if raw_deserialize_uint64(start, end, &size):
-                        raise DecodeError()
+                        raise makeDecodeError(start[0])
+                    if start[0] + size > end:
+                        raise makeDecodeError(start[0])
                     PyObject_SetAttrString(self, name,
                         decoder(start, start[0] + size)
                         )
@@ -104,10 +106,14 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
                         decoder(start, end)
                         )
                 continue
+        if t>5:
+            raise makeDecodeError(start[0])
         decoder = __decoder_bytype[t]
+        if decoder == NULL:
+            raise makeDecodeError(start[0])
         if t == 2:
             if raw_deserialize_uint64(start, end, &size):
-                raise DecodeError()
+                raise makeDecodeError(start[0])
             decoder(start, start[0] + size)
         else:
             decoder(start, end)
@@ -118,7 +124,7 @@ cdef object repeat_deserialize_${this.fullname}(char **start, char *end):
     cdef uint64_t size
     while start[0] < end:
         if raw_deserialize_uint64(start, end, &size):
-            raise DecodeError()
+            raise makeDecodeError(start[0])
         value.append(deserialize_${this.fullname}(
             start, start[0] + size))
     return value
@@ -126,4 +132,11 @@ cdef object repeat_deserialize_${this.fullname}(char **start, char *end):
 cdef object wrapped_deserialize_${this.fullname}(object array):
     cdef char *buff = PyByteArray_AS_STRING(array)
     cdef Py_ssize_t size = PyByteArray_GET_SIZE(array)
-    return deserialize_${this.fullname}(&buff, buff + size)
+    cdef object result
+    cdef object start
+    try:
+        result = deserialize_${this.fullname}(&buff, buff + size)
+    except InternalDecodeError as error:
+        start = PyLong_FromUnsignedLongLong(<uint64_t>buff)
+        raise DecodeError(error.args[0] - start)
+    return result

@@ -132,9 +132,17 @@ def make_parser():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('input',
-        type=str)
+        type=str,
+        help='Input protocol file.')
     parser.add_argument('--out-dir', '-o',
-        type=str, dest='out_dir', default=None)
+        type=str, dest='out_dir', default=None,
+        help='Output directory where generated files will be placed.'
+        'If you omit this option files will be generated in same dirrectory '
+        'where input file placed.')
+    parser.add_argument('--package', '-p',
+        action='store_true', dest='package', default=False,
+        help='If this option enabled compiler will generates package instead '
+        'of module. Package will autocompile protocol if it is changed.')
     return parser
 
 if __name__ == '__main__':
