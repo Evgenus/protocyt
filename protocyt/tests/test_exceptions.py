@@ -58,3 +58,8 @@ class ExceptionsTest(unittest.TestCase):
         ba = bytearray('\x22\x07\x03\x8E\x02\x9E\xA7\x05')
         self.assertRaises(Exception, Class3.deserialize, ba)
 
+    def test_7(self):
+        'bad repeated field'
+        ba = bytearray('\x22\x06\x03\x8E\x02\x9E\xA7\xF5')
+        self.assertRaises(Exception, Class3.deserialize, ba)
+

@@ -1,0 +1,98 @@
+<html>
+<head>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://www.highcharts.com/js/highcharts.js"></script>
+<script>
+Highcharts.visualize = function(table, options) {
+	// the categories
+	options.xAxis.categories = [];
+	jQuery('tbody th', table).each( function(i) {
+		options.xAxis.categories.push(this.innerHTML);
+	});
+
+	// the data series
+	options.series = [];
+	jQuery('tr', table).each( function(i) {
+		var tr = this;
+		jQuery('th, td', tr).each( function(j) {
+			if (j > 0) { // skip first column
+				if (i == 0) { // get the name and init the series
+					options.series[j - 1] = {
+						name: this.innerHTML,
+						data: []
+					};
+				} else { // add values
+					options.series[j - 1].data.push(parseFloat(this.innerHTML));
+				}
+			}
+		});
+	});
+
+	var chart = new Highcharts.Chart(options);
+}
+</script>
+</head>
+<body>
+<h1>Protocyt performance benchmark</h1>
+% for name, result in results:
+<div id="container${name}" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable${name}" style='display:none'>
+	<thead>
+		<tr>
+        % for bname in bars:
+            % if loop.first:
+			<th></th>
+			% else:
+			<td>${bname}</td>
+			% endif
+        % endfor
+		</tr>
+	</thead>
+	<tbody>
+	% for item in result:
+		<tr>
+        % for bname in bars:
+            % if loop.first:
+			<th>${item[bname]}</th>
+			% else:
+			<td>${item[bname]}</td>
+			% endif
+        % endfor
+        </tr>
+	% endfor
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable${name}'),
+options = {
+	   chart: {
+	      renderTo: 'container${name}',
+	      defaultSeriesType: 'column'
+	   },
+	   title: {
+	      text: 'Serialization time: ${name}'
+	   },
+	   xAxis: {
+	   },
+	   yAxis: {
+	      title: {
+	         text: 'Milliseconds'
+	      }
+	   },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
+	      }
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+% endfor
+<textarea cols='80' rows='20'>
+${output}
+</textarea>
+</body>
+</html>

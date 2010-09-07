@@ -48,6 +48,25 @@ class ${this.fullname}(BaseMessage):
 % endfor
             )
 
+    def __getstate__(self):
+        positional = (
+% for index, field in this.fields_required:
+            self.${field.name},
+% endfor
+% for index, field in this.fields_repeated:
+            self.${field.name},
+% endfor
+            )
+        optional = {}
+% for number, field in this.fields_optional:
+        if hasattr(self, "${field.name}"):
+            optional["${field.name}"] = self.${field.name}
+% endfor
+        return positional, optional
+
+    def __setstate__(self, state):
+        self.__init__(*state[0], **state[1])
+
 % for name, message in this.messages.iteritems():
     ${name} = ${message.fullname}
 % endfor

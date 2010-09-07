@@ -22,7 +22,6 @@ class Path(object):
 
     Examples:
 
-        >>> from utils import Path
         >>> Path('a/b/c').str()
         '/a/b/c'
         >>> Path(['a', 'b', 'c']).str()
@@ -368,3 +367,9 @@ class Path(object):
         Returns Path object of current working directory
         """
         return cls.from_file(os.getcwd())
+
+    def stat(self):
+        """
+        Returns stat for path
+        """
+        return os.stat(self.str())

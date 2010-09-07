@@ -7,7 +7,7 @@ Standart way to run tests:
     
 Runnting tests using `nose`:
 
-    nosetests protocyt
+    nosetests protocyt --with-doctest --with-coverage --cover-package=protocyt
 
 
 Dependencies

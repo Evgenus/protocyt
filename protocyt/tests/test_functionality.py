@@ -1,7 +1,8 @@
 # standart
 import unittest
+import inspect
 # internal
-from protocyt import meta
+from protocyt import meta, protoc, classes
 
 def make_hex(string):
     return ' '.join('%02X' % ord(i) for i in string)
@@ -67,7 +68,8 @@ class FunctionalityTest(unittest.TestCase):
     def test_02(self):
         'string output'
         instance = Class1(150)
-        self.assertEqual(make_hex(instance.SerializePartialToString()), '08 96 01')
+        self.assertEqual(
+            make_hex(instance.SerializePartialToString()), '08 96 01')
 
     def test_03(self):
         '__ne__'
@@ -142,3 +144,15 @@ class FunctionalityTest(unittest.TestCase):
         'field not in Extensions set by attribute'
         instance = Class5(150, 350)
         self.assertRaises(AttributeError, setattr, instance.Extensions, 'b', 1)
+
+    def test_15(self):
+        'pretty method'
+        protocol = protoc.protocol_from_source(inspect.cleandoc('''
+            message Class3 {
+              message Class1 {
+                required int32 a = 1;
+              }
+              required Class1 c = 3;
+            }
+            '''))
+        list(protocol.pretty(classes.State(protocol)))

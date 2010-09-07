@@ -4,7 +4,7 @@ import tempfile
 import hashlib
 import distutils.ccompiler
 from lib2to3.pgen2.parse import ParseError
-from Cython.Compiler.Main import compile as cython_compile
+from Cython.Compiler.Main import compile as cython_compile, CompilationOptions
 # internal
 from .path import Path
 from .parser import ProtoParser
@@ -17,16 +17,6 @@ try:
 except ImportError:
     from distutils import sysconfig
 
-def from_file(filename, output_dir=None, check=False):
-    name = filename.filename
-    with open(filename.str()) as stream:
-        source = stream.read()
-
-    if output_dir is None:
-        output_dir = filename.up()
-
-    return from_source(source, name, output_dir)
-
 class NoProtocolDefined(DocTemplatable, RuntimeError):
     'Single protocol should be defined in source, but {0} was found'
 
@@ -35,18 +25,12 @@ class NameNotDefined(DocTemplatable, RuntimeError):
     Output module name wasn't specified and wasn't found in protocol properties
     """
 
-def from_source(source, name=None, output_dir=None, check=False):
-    out_file = (output_dir / name).add_ext(sysconfig.get_config_var('SO'))
-
+def protocol_from_source(source):
     protocyt_dir = Path.from_file(__file__).up()
     grammar_file = str(protocyt_dir / 'ProtobufGrammar.txt')
     parser = ProtoParser(grammar_file)
 
     tree = parser.parse_string(source)
-
-    temp_dir = Path.from_file(tempfile.gettempdir()) / name
-    if not temp_dir.exists():
-        temp_dir.makedirs()
 
     visitor = CoreGenerator(parser.grammar)
 
@@ -54,7 +38,16 @@ def from_source(source, name=None, output_dir=None, check=False):
     if len(parts)!=1:
         raise NoProtocolDefined(len(parts))
     else:
-        protocol = parts[0]
+        return parts[0]
+
+def from_source(source, name=None, output_dir=None, check=False, keep=False):
+    out_file = (output_dir / name).add_ext(sysconfig.get_config_var('SO'))
+
+    protocol = protocol_from_source(source)
+
+    temp_dir = Path.from_file(tempfile.gettempdir()) / name
+    if not temp_dir.exists():
+        temp_dir.makedirs()
 
     protocol_data = protocol.data()
 
@@ -86,11 +79,15 @@ def from_source(source, name=None, output_dir=None, check=False):
     with pyx_file.open('wb') as stream:
         stream.write(protocol_data)
 
-    cython_compile(pyx_file.str())
+    options = CompilationOptions(
+        verbose=True,
+        )
+    cython_compile(pyx_file.str(), options=options)
 
-    compiler = distutils.ccompiler.new_compiler(verbose=10)
+    compiler = distutils.ccompiler.new_compiler(verbose=1)
 
     if sys.platform == 'win32':
+        protocyt_dir = Path.from_file(__file__).up()
         compiler.add_include_dir(str(protocyt_dir / 'includes'))
         libs_dir = Path.from_file(sysconfig.get_config_var('BINDIR')) / 'libs'
         compiler.add_library_dir(libs_dir.str())
@@ -108,7 +105,11 @@ def from_source(source, name=None, output_dir=None, check=False):
         out_file.str()
         )
 
-    temp_dir.remove()
+    if not keep:
+        temp_dir.remove()
+        result = True
+    else:
+        result = temp_dir
     
     if check:
         checkfile_name = (output_dir / name).add_ext('.checksum')
@@ -118,7 +119,44 @@ def from_source(source, name=None, output_dir=None, check=False):
             stream.write('{0}\n{1}\n{2}\n'.format(
                 source_chks, output_chks, protoc_chks))
 
-    return True
+    return result
+
+def from_file(filename, output_dir=None, check=False, keep=False):
+    name = filename.filename
+    with open(filename.str()) as stream:
+        source = stream.read()
+
+    if output_dir is None:
+        output_dir = filename.up()
+
+    return from_source(source, name, output_dir, check=check, keep=keep)
+
+def package_from_file(filename, output_dir=None):
+    name = filename.filename
+    with open(filename.str()) as stream:
+        source = stream.read()
+
+    if output_dir is None:
+        output_dir = filename.up()
+    output_dir = output_dir / name
+
+    if output_dir.exists():
+        output_dir.remove()
+
+    output_dir.makedirs()
+
+    proto_file = output_dir / '_core.proto'
+    with open(proto_file.str(), 'wt') as stream:
+        stream.write(source)
+
+    from classes import ENVIRONMENT
+    template = ENVIRONMENT.from_file(
+        Path.from_file(__file__).up() / 'package.pytempl')
+
+    package_file = output_dir / '__init__.py'
+
+    with open(package_file.str(), 'wt') as stream:
+        stream.write(template.render())
 
 def main(options):
     filename = Path.from_file(options.input)
@@ -126,7 +164,12 @@ def main(options):
         output_dir = None
     else:
         output_dir = Path.from_file(options.out_dir)
-    from_file(filename, output_dir)
+    if options.package:
+        package_from_file(filename, output_dir)
+    else:
+        result = from_file(filename, output_dir, keep=options.keep)
+        if options.keep:
+            print 'Temporary files places at {0:s}'.format(result)
 
 def make_parser():
     import argparse
@@ -143,6 +186,9 @@ def make_parser():
         action='store_true', dest='package', default=False,
         help='If this option enabled compiler will generates package instead '
         'of module. Package will autocompile protocol if it is changed.')
+    parser.add_argument('--keep', '-k',
+        action='store_true', dest='keep', default=False,
+        help="Keep intermediate files (*.pyx, *.c)")
     return parser
 
 if __name__ == '__main__':

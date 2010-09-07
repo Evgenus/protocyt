@@ -18,7 +18,7 @@ class DocTemplatable(object):
         >>> print InvalidName('BadName')
         Name `BadName` is invalid in my world
 
-        >>> class InvalidAttribute(DocTemplatable, NameError):
+        >>> class InvalidAttribute(DocTemplatable, AttributeError):
         ...    'Name `{name}` is invalid in my world'
         ...
         >>> print InvalidAttribute(name='BadName')
@@ -27,6 +27,7 @@ class DocTemplatable(object):
     args = ()
     def __init__(self, *args, **kwargs):
         super(DocTemplatable, self).__init__(*args)
+        self.args = args
         self.kwargs = kwargs
     def __str__(self):
         return self.__doc__.format(*self.args, **self.kwargs)

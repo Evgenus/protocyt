@@ -1,0 +1,7 @@
+message Node {
+    message Child {
+        required string name = 1;
+        required Node value = 2;
+    }
+    repeated Child children = 1;
+}
