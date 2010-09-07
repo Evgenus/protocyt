@@ -1,0 +1,444 @@
+<html>
+<head>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript" src="http://www.highcharts.com/js/highcharts.js"></script>
+<script>
+Highcharts.visualize = function(table, options) {
+	// the categories
+	options.xAxis.categories = [];
+	jQuery('tbody th', table).each( function(i) {
+		options.xAxis.categories.push(this.innerHTML);
+	});
+
+	// the data series
+	options.series = [];
+	jQuery('tr', table).each( function(i) {
+		var tr = this;
+		jQuery('th, td', tr).each( function(j) {
+			if (j > 0) { // skip first column
+				if (i == 0) { // get the name and init the series
+					options.series[j - 1] = {
+						name: this.innerHTML,
+						data: []
+					};
+				} else { // add values
+					options.series[j - 1].data.push(parseFloat(this.innerHTML));
+				}
+			}
+		});
+	});
+
+	var chart = new Highcharts.Chart(options);
+}
+</script>
+</head>
+<body>
+<h1>Protocyt performance benchmark</h1>
+<div id="container_timebig" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_timebig" style='display:none'>
+	<thead>
+		<tr>
+			<th></th>
+			<td>serialize</td>
+			<td>deserialize</td>
+			<td>pickle.dumps</td>
+			<td>pickle.loads</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<th>37449</th>
+			<td>180.599999428</td>
+			<td>296.399998665</td>
+			<td>882.899999619</td>
+			<td>401.499986649</td>
+        </tr>
+		<tr>
+			<th>65535</th>
+			<td>366.999983788</td>
+			<td>969.799995422</td>
+			<td>1894.00000572</td>
+			<td>1078.40001583</td>
+        </tr>
+		<tr>
+			<th>87381</th>
+			<td>441.399979591</td>
+			<td>1366.99998379</td>
+			<td>2586.30001545</td>
+			<td>1537.5</td>
+        </tr>
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable_timebig'),
+options = {
+	   chart: { renderTo: 'container_timebig', defaultSeriesType: 'column' },
+	   title: { text: 'Serialization time: big' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Milliseconds' } },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
+	      }
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+<div id="container_timemedium" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_timemedium" style='display:none'>
+	<thead>
+		<tr>
+			<th></th>
+			<td>serialize</td>
+			<td>deserialize</td>
+			<td>pickle.dumps</td>
+			<td>pickle.loads</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<th>4681</th>
+			<td>22.4222236209</td>
+			<td>18.0000024182</td>
+			<td>85.6666763624</td>
+			<td>29.7058820724</td>
+        </tr>
+		<tr>
+			<th>8191</th>
+			<td>59.7058744992</td>
+			<td>39.9999985328</td>
+			<td>162.700009346</td>
+			<td>61.2352876102</td>
+        </tr>
+		<tr>
+			<th>21845</th>
+			<td>111.000013351</td>
+			<td>144.999980927</td>
+			<td>493.19999218</td>
+			<td>191.200017929</td>
+        </tr>
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable_timemedium'),
+options = {
+	   chart: { renderTo: 'container_timemedium', defaultSeriesType: 'column' },
+	   title: { text: 'Serialization time: medium' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Milliseconds' } },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
+	      }
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+<div id="container_timesmall" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_timesmall" style='display:none'>
+	<thead>
+		<tr>
+			<th></th>
+			<td>serialize</td>
+			<td>deserialize</td>
+			<td>pickle.dumps</td>
+			<td>pickle.loads</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<th>585</th>
+			<td>2.90434809699</td>
+			<td>1.77112683444</td>
+			<td>9.70192368214</td>
+			<td>3.20833310103</td>
+        </tr>
+		<tr>
+			<th>1023</th>
+			<td>5.51648323353</td>
+			<td>3.58781336029</td>
+			<td>17.7894767962</td>
+			<td>6.23926355795</td>
+        </tr>
+		<tr>
+			<th>5461</th>
+			<td>27.6216236321</td>
+			<td>23.6279077308</td>
+			<td>103.199982643</td>
+			<td>36.0357080187</td>
+        </tr>
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable_timesmall'),
+options = {
+	   chart: { renderTo: 'container_timesmall', defaultSeriesType: 'column' },
+	   title: { text: 'Serialization time: small' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Milliseconds' } },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
+	      }
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+<div id="container_sizebig" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_sizebig" style='display:none'>
+	<thead>
+		<tr>
+			<th></th>
+			<td>serialize</td>
+			<td>pickle.dumps</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<th>37449</th>
+			<td>376260</td>
+			<td>1581531</td>
+        </tr>
+		<tr>
+			<th>65535</th>
+			<td>680226</td>
+			<td>2817441</td>
+        </tr>
+		<tr>
+			<th>87381</th>
+			<td>890244</td>
+			<td>3713003</td>
+        </tr>
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable_sizebig'),
+options = {
+	   chart: { renderTo: 'container_sizebig', defaultSeriesType: 'column' },
+	   title: { text: 'Serialized data size: big' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Bytes' } },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
+	      }
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+<div id="container_sizemedium" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_sizemedium" style='display:none'>
+	<thead>
+		<tr>
+			<th></th>
+			<td>serialize</td>
+			<td>pickle.dumps</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<th>4681</th>
+			<td>47020</td>
+			<td>197083</td>
+        </tr>
+		<tr>
+			<th>8191</th>
+			<td>85002</td>
+			<td>351537</td>
+        </tr>
+		<tr>
+			<th>21845</th>
+			<td>222548</td>
+			<td>927723</td>
+        </tr>
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable_sizemedium'),
+options = {
+	   chart: { renderTo: 'container_sizemedium', defaultSeriesType: 'column' },
+	   title: { text: 'Serialized data size: medium' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Bytes' } },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
+	      }
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+<div id="container_sizesmall" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_sizesmall" style='display:none'>
+	<thead>
+		<tr>
+			<th></th>
+			<td>serialize</td>
+			<td>pickle.dumps</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<th>585</th>
+			<td>5867</td>
+			<td>24027</td>
+        </tr>
+		<tr>
+			<th>1023</th>
+			<td>10601</td>
+			<td>43299</td>
+        </tr>
+		<tr>
+			<th>5461</th>
+			<td>55624</td>
+			<td>231403</td>
+        </tr>
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable_sizesmall'),
+options = {
+	   chart: { renderTo: 'container_sizesmall', defaultSeriesType: 'column' },
+	   title: { text: 'Serialized data size: small' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Bytes' } },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
+	      }
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+<textarea cols='80' rows='20'>
+Initialization [2-9] 1023
+serialize......................................................................................................................................................................................
+5.516 milliseconds per serialize
+deserialize.......................................................................................................................................................................................................................................................................................
+3.588 milliseconds per deserialize
+pickle.dumps.........................................................
+17.789 milliseconds per pickle.dumps
+pickle.loads...................................................................................................................................................................
+6.239 milliseconds per pickle.loads
+Initialization [2-12] 8191
+serialize.................
+59.706 milliseconds per serialize
+deserialize..........................
+40.000 milliseconds per deserialize
+pickle.dumps..........
+162.700 milliseconds per pickle.dumps
+pickle.loads.................
+61.235 milliseconds per pickle.loads
+Initialization [2-15] 65535
+serialize..........
+367.000 milliseconds per serialize
+deserialize..........
+969.800 milliseconds per deserialize
+pickle.dumps..........
+1894.000 milliseconds per pickle.dumps
+pickle.loads..........
+1078.400 milliseconds per pickle.loads
+Initialization [4-6] 5461
+serialize.....................................
+27.622 milliseconds per serialize
+deserialize...........................................
+23.628 milliseconds per deserialize
+pickle.dumps..........
+103.200 milliseconds per pickle.dumps
+pickle.loads............................
+36.036 milliseconds per pickle.loads
+Initialization [4-7] 21845
+serialize..........
+111.000 milliseconds per serialize
+deserialize..........
+145.000 milliseconds per deserialize
+pickle.dumps..........
+493.200 milliseconds per pickle.dumps
+pickle.loads..........
+191.200 milliseconds per pickle.loads
+Initialization [4-8] 87381
+serialize..........
+441.400 milliseconds per serialize
+deserialize..........
+1367.000 milliseconds per deserialize
+pickle.dumps..........
+2586.300 milliseconds per pickle.dumps
+pickle.loads..........
+1537.500 milliseconds per pickle.loads
+Initialization [8-3] 585
+serialize.........................................................................................................................................................................................................................................................................................................................................................
+2.904 milliseconds per serialize
+deserialize........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................
+1.771 milliseconds per deserialize
+pickle.dumps........................................................................................................
+9.702 milliseconds per pickle.dumps
+pickle.loads........................................................................................................................................................................................................................................................................................................................
+3.208 milliseconds per pickle.loads
+Initialization [8-4] 4681
+serialize.............................................
+22.422 milliseconds per serialize
+deserialize........................................................
+18.000 milliseconds per deserialize
+pickle.dumps............
+85.667 milliseconds per pickle.dumps
+pickle.loads..................................
+29.706 milliseconds per pickle.loads
+Initialization [8-5] 37449
+serialize..........
+180.600 milliseconds per serialize
+deserialize..........
+296.400 milliseconds per deserialize
+pickle.dumps..........
+882.900 milliseconds per pickle.dumps
+pickle.loads..........
+401.500 milliseconds per pickle.loads
+Initialization [2-9] 1023
+serialize 10601
+pickle.dumps 43299
+Initialization [2-12] 8191
+serialize 85002
+pickle.dumps 351537
+Initialization [2-15] 65535
+serialize 680226
+pickle.dumps 2817441
+Initialization [4-6] 5461
+serialize 55624
+pickle.dumps 231403
+Initialization [4-7] 21845
+serialize 222548
+pickle.dumps 927723
+Initialization [4-8] 87381
+serialize 890244
+pickle.dumps 3713003
+Initialization [8-3] 585
+serialize 5867
+pickle.dumps 24027
+Initialization [8-4] 4681
+serialize 47020
+pickle.dumps 197083
+Initialization [8-5] 37449
+serialize 376260
+pickle.dumps 1581531
+Total test running time 169.213 seconds
+
+</textarea>
+</body>
+</html>
