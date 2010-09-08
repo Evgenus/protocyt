@@ -34,12 +34,12 @@ Highcharts.visualize = function(table, options) {
 </head>
 <body>
 <h1>Protocyt performance benchmark</h1>
-% for name, result in results:
-<div id="container${name}" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
-<table id="datatable${name}" style='display:none'>
+% for name, result in results_time:
+<div id="container_time${name}" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_time${name}" style='display:none'>
 	<thead>
 		<tr>
-        % for bname in bars:
+        % for bname in bars_time:
             % if loop.first:
 			<th></th>
 			% else:
@@ -51,7 +51,7 @@ Highcharts.visualize = function(table, options) {
 	<tbody>
 	% for item in result:
 		<tr>
-        % for bname in bars:
+        % for bname in bars_time:
             % if loop.first:
 			<th>${item[bname]}</th>
 			% else:
@@ -64,22 +64,59 @@ Highcharts.visualize = function(table, options) {
 </table>
 <script>
 jQuery(document).ready(function() {
-var table = $('#datatable${name}'),
+var table = $('#datatable_time${name}'),
 options = {
-	   chart: {
-	      renderTo: 'container${name}',
-	      defaultSeriesType: 'column'
-	   },
-	   title: {
-	      text: 'Serialization time: ${name}'
-	   },
-	   xAxis: {
-	   },
-	   yAxis: {
-	      title: {
-	         text: 'Milliseconds'
+	   chart: { renderTo: 'container_time${name}', defaultSeriesType: 'column' },
+	   title: { text: 'Serialization time: ${name}' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Milliseconds' } },
+	   tooltip: {
+	      formatter: function() {
+	         return '<b>'+ this.series.name +'</b><br/>'+
+	            this.y +' '+ this.x.toLowerCase();
 	      }
-	   },
+	   }
+	};
+Highcharts.visualize(table, options);
+});
+</script>
+% endfor
+% for name, result in results_size:
+<div id="container_size${name}" class="highcharts-container" style="height:410px; width: 800px; margin: 0 auto; clear:both"></div>
+<table id="datatable_size${name}" style='display:none'>
+	<thead>
+		<tr>
+        % for bname in bars_size:
+            % if loop.first:
+			<th></th>
+			% else:
+			<td>${bname}</td>
+			% endif
+        % endfor
+		</tr>
+	</thead>
+	<tbody>
+	% for item in result:
+		<tr>
+        % for bname in bars_size:
+            % if loop.first:
+			<th>${item[bname]}</th>
+			% else:
+			<td>${item[bname]}</td>
+			% endif
+        % endfor
+        </tr>
+	% endfor
+	</tbody>
+</table>
+<script>
+jQuery(document).ready(function() {
+var table = $('#datatable_size${name}'),
+options = {
+	   chart: { renderTo: 'container_size${name}', defaultSeriesType: 'column' },
+	   title: { text: 'Serialized data size: ${name}' },
+	   xAxis: { },
+	   yAxis: { title: { text: 'Bytes' } },
 	   tooltip: {
 	      formatter: function() {
 	         return '<b>'+ this.series.name +'</b><br/>'+

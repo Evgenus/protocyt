@@ -3,7 +3,7 @@ import unittest
 import inspect
 import sys
 # internal
-from .. import protoc, path
+from protocyt import protoc, path
 
 def make_hex(string):
     return ' '.join('%02X' % ord(i) for i in string)
