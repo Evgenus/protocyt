@@ -1,0 +1,4 @@
+Author:         Eugene.Chernyshov@gmail.com
+Home page:      http://evgenus.github.com/protocyt
+GitHub page:    http://github.com/Evgenus/protocyt
+PyPi page:      http://pypi.python.org/pypi/protocyt
