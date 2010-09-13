@@ -1,0 +1,48 @@
+body {
+    margin: 5px;
+    padding: 0px;
+    font-size: 10px;
+    background-image: url(background.png);
+}
+
+.holder {
+    width:  100%;
+}
+
+.centerer {
+    left: 50%;
+    width: 1px;
+    position: relative;
+}
+
+.centerer > div {
+    width: 800px;
+    left: -400px;
+    top: 0px;
+    position: absolute;
+    background-color: white;
+    padding: 10px;
+    text-align: justify;
+}
+
+.logo {
+    background-image: url(logo.png);
+    width: 320px;
+    height: 340px;
+    display: inline-block;
+    float: left;
+    margin: 10px;
+}
+
+.description {
+    clear: left;
+}
+
+.description > p {
+    text-indent: 20px;
+}
+
+.depend {
+    display: inline-block;
+    min-width: 100px;
+}

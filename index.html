@@ -1,12 +1,95 @@
 <html>
 <head>
+<link rel="stylesheet" type="text/css" href="jquery-ui/jquery-ui.css" media="screen" />
+<link rel="stylesheet" type="text/css" href="main.css" media="screen" />
 </head>
 <body>
+<div class='holder'>
+    <div class='centerer'>
+        <div class='ui-widget ui-widget-content ui-corner-all'>
+
+<div class='logo'></div>
+
 <h1>Protocyt</h1>
+
 <p>Compiles protobuf files into python extension modules using cython</p>
-<p><em>Better site is coming soon</em></p>
-<a href='http://pypi.python.org/pypi/protocyt'>PyPi distribution page</a><br>
-<a href='http://github.com/Evgenus/protocyt'>GitHub main page</a><br>
-<a href='benchmark.html'>Comparison to pickle</a><br>
+<p>
+    <a href='http://pypi.python.org/pypi/protocyt'>PyPi distribution page</a><br>
+    <a href='http://github.com/Evgenus/protocyt'>GitHub main page</a><br>
+</p>
+
+<h3>Author/Maintainer</h3>
+<p>
+    <strong>Eugene Chernyshov</strong>
+</p>
+<p>
+    E-mail/Jabber: <a href='mailto:chernyshov.eugene@gmail.com'>Chernyshov.Eugene@gmail.com</a><br>
+    ICQ: 165044315
+</p>
+
+<h3>Contributors</h3>
+<p>
+    <strong>Paul Colomiets</strong>
+</p>
+<p>
+    E-mail: <a href='mailto:pc@gafol.net'>pc@gafol.net</a><br>
+    Jabber: pc@jabber.gafol.net
+</p>
+
+<div class='description'>
+<h2>About</h2>
+<p>
+    Protocyt allows you to use fast serialization/deserialization functionality for your classes.
+    Using <a href='http://code.google.com/p/protobuf/'>protobuf</a> format desription files it creates
+    python extension modules (*.pyd or *.so) with class for each message in description.
+    You can directly use this classes on derive your classes from them.
+</p>
+<p>
+    Protobuf is the best instrument when you need to store and load objects with fixed internal structure as fast as possible.
+    Usually when you need to implement complicated network protocol or to store custom objects into database.
+</p>
+<p>
+    You can change your protocol definition and generated modules will safely skip obsolete fields.
+    So you can store data in wide representation and read it in different views.
+    If data is not consistent or not much declared protocol, loading will cause DecodeError.
+    This DecodeError will contains description of problem and number of byte in input stream when decoding fails.
+</p>
+<div class="ui-widget">
+	<div class="ui-state-highlight ui-corner-all">
+		<p style='margin: 10px'><span style="float: left" class="ui-icon ui-icon-info"></span>
+		<strong>Note</strong>
+        Protocyt is much faster than native protobuf bindings since it's using a few amount of python code.
+        But some features (like merging several data packets into a single object) are not inplemented.
+        </p>
+	</div>
+</div>
+</div>
+
+<h2>Features</h2>
+<p>
+<ul>
+<li>speed</li>
+<li>safety</li>
+<li>small data size</li>
+</ul>
+</p>
+
+<h2>Dependencies</h2>
+<p>
+<ul>
+<li><span class='depend'>jinja2 >= 2.5</span> <em>to generate cython input file</em></li>
+<li><span class='depend'>cython >= 0.13</span> <em>to compile extension modules</em></li>
+<li><span class='depend'>argparse</span> <em>to make command line arguments beautiful</em></li>
+</ul>
+</p>
+
+<h2>Benchmark</h2>
+<p>
+    You can check <a href='benchmark.html'>comparison to pickle</a> charts to evaluate advantage in speed and data size.
+</p>
+
+        </div>
+    </div>
+</div>
 </body>
 </html>
