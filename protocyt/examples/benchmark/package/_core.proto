@@ -5,3 +5,13 @@ message Node {
     }
     repeated Child children = 1;
 }
+
+message Node2 {
+    option immutable = true;
+    message Child2 {
+        option immutable = true;
+        required string name = 1;
+        required Node2 value = 2;
+    }
+    repeated Child2 children = 1;
+}

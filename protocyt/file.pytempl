@@ -10,6 +10,16 @@ cdef object repeat_${name}(char **pointer, char *end):
     return value
 <%endmacro>
 
+<%macro make_repeatable_with_length(name)>
+cdef object repeat_${name}(char **pointer, char *end):
+    cdef object value = []
+    cdef uint64_t size =0
+    raw_deserialize_uint64(pointer, end, &size)
+    while pointer[0]<end:
+        value.append(${name}(pointer, pointer[0]+size))
+    return value
+<%endmacro>
+
 from cpython cimport *
 
 ${this.title('_', 'EXTERNALS')}
@@ -25,9 +35,8 @@ cdef extern from "Python.h":
     bint PyByteArray_Resize(object bytearray, Py_ssize_t len)
     char* PyByteArray_AS_STRING(object bytearray)
     Py_ssize_t PyByteArray_GET_SIZE(object bytearray)
-    PyObject* _PyObject_New(PyTypeObject *type)
-    PyObject* PyTuple_Pack(Py_ssize_t n, ...)
-
+    PyObject *PyObject_Init(object obj, object type)
+    
 cdef extern from "string.h":
     cdef int strlen(char* s) nogil
     cdef void* memcpy(void* dest, void* src, size_t len) nogil
@@ -425,7 +434,7 @@ cdef object deserialize_bytes(char **pointer, char *end):
     pointer[0] = end
     return bytearray(value)
 
-${make_repeatable('deserialize_bytes')}
+${make_repeatable_with_length('deserialize_bytes')}
 
 ${this.title(' ', 'string')}
 
@@ -437,7 +446,7 @@ cdef object deserialize_string(char **pointer, char *end):
     pointer[0] = end
     return value
 
-${make_repeatable('deserialize_string')}
+${make_repeatable_with_length('deserialize_string')}
 
 ${this.title(' ', 'bool')}
 

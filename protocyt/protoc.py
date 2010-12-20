@@ -8,9 +8,21 @@ from Cython.Compiler.Main import compile as cython_compile, CompilationOptions
 # internal
 from .path import Path
 from .parser import ProtoParser
-from .compiler import CoreGenerator
+from .compiler import CodeGenerator
 from .templatable import DocTemplatable
 from . import classes
+
+__all__ = [
+    'NoProtocolDefined',
+    'NameNotDefined',
+    'protocol_from_source',
+    'protocol_from_file',
+    'from_source',
+    'from_file',
+    'package_from_file',
+    'main',
+    'make_parser',
+    ]
 
 try:
     import sysconfig
@@ -25,14 +37,17 @@ class NameNotDefined(DocTemplatable, RuntimeError):
     Output module name wasn't specified and wasn't found in protocol properties
     """
 
-def protocol_from_source(source):
+def protocol_from_source(source, lookupdir=None):
+    if lookupdir is None:
+        lookupdir = Path.cwd()
+
     protocyt_dir = Path.from_file(__file__).up()
     grammar_file = str(protocyt_dir / 'ProtobufGrammar.txt')
     parser = ProtoParser(grammar_file)
 
     tree = parser.parse_string(source)
 
-    visitor = CoreGenerator(parser.grammar)
+    visitor = CodeGenerator(parser.grammar, lookupdir)
 
     parts = list(visitor.visit(tree))
     if len(parts)!=1:
@@ -40,10 +55,19 @@ def protocol_from_source(source):
     else:
         return parts[0]
 
+def protocol_from_file(filename):
+    name = filename.filename
+    with open(filename.str()) as stream:
+        source = stream.read()
+    return protocol_from_source(source, filename.up())
+
+# Dependency injection to make protocol import other protocols
+classes.Protocol.from_file = staticmethod(protocol_from_file)
+
 def from_source(source, name=None, output_dir=None, check=False, keep=False):
     out_file = (output_dir / name).add_ext(sysconfig.get_config_var('SO'))
 
-    protocol = protocol_from_source(source)
+    protocol = protocol_from_source(source, output_dir)
 
     temp_dir = Path.from_file(tempfile.gettempdir()) / name
     if not temp_dir.exists():
@@ -121,7 +145,7 @@ def from_source(source, name=None, output_dir=None, check=False, keep=False):
 
     return result
 
-def from_file(filename, output_dir=None, check=False, keep=False):
+def from_file(filename, output_dir=None, check=False, keep=True):
     name = filename.filename
     with open(filename.str()) as stream:
         source = stream.read()

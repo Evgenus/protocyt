@@ -31,7 +31,6 @@ if __name__=='__main__':
             while time() - start < 1 or counter < 10:
                 counter+=1
                 tester()
-                sys.stdout.write('.')
             end = time()
             print
             result = 1000 * (end - start) / counter

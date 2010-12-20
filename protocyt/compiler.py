@@ -6,6 +6,11 @@ from textwrap import dedent
 # internal
 from . import classes
 
+__all__ = [
+    'TreeVisitor',
+    'CoreGenerator',
+    ]
+
 def itail(iterable, size=1):
     'Yields `size` elements of iterable and iterator over rest of elements'
     iterator = iter(iterable)
@@ -40,17 +45,37 @@ class TreeVisitor(object):
             else:
                 queue.extend(node.children)
 
-class CoreGenerator(TreeVisitor):
+class CodeGenerator(TreeVisitor):
     '''
     Visitor over AST which converts nodes into instances structure.
     '''
+    
+    def __init__(self, grammar, lookupdir):
+        super(CodeGenerator, self).__init__(grammar)
+        self.lookupdir = lookupdir
+    
     def on_NUMBER(self, node):
         yield node.value
+
+    def on_STRING(self, node):
+        value = node.value
+        if value.startswith('"""'):
+            yield value[3:-3]
+        elif value.startswith("'''"):
+            yield value[3:-3]
+        elif value.startswith('"'):
+            yield value[1:-1]
+        elif value.startswith("'"):
+            yield value[1:-1]
 
     def on_indent(self, node):
         yield node.children[0].value
 
     on_label = on_indent
+
+    def on_import(self, node):
+        filename, = self.visit(*node.children)
+        yield classes.Import(self.lookupdir / filename)
 
     def on_type(self, node):
         '''
@@ -69,7 +94,7 @@ class CoreGenerator(TreeVisitor):
         package: "package" indent ( "." indent )* ";"
         '''
         name, = self.visit(*node.children)
-        yield classes.Property(package_name=name)
+        yield classes.Property(['package_name'], name)
 
     def on_fieldTail(self, node):
         '''
@@ -100,13 +125,34 @@ class CoreGenerator(TreeVisitor):
         child.kind = label
         yield child
 
+    def on_intlit(self, node):
+        value = float(str(node))
+        try:
+            ivalue = int(value)
+        except ValueError:
+            return value
+        else:
+            return ivalue if value == ivalue else value
+ 
+    def on_constant(self, node):
+        if isinstance(node.children[0], Leaf):
+            if node.children[0].value == 'true':
+                yield True
+                return
+            elif node.children[0].value == 'false':
+                yield False
+                return
+        for child in self.visit(*node.children):
+            yield child
+
     def on_option(self, node):
         '''
         option: "option" optionBody ";"
         optionBody: indent ( "." indent )* "=" constant
+        constant: indent | intlit | STRING | "true" | "false"
         '''
-        return
-        yield
+        parts = list(self.visit(*node.children))
+        yield classes.Property(parts[:-1], parts[-1])
 
     def on_enum(self, node):
         '''

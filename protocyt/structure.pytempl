@@ -10,7 +10,7 @@ class ${this.fullname}(BaseMessage):
         ${field.name}, # ${''.join(field.pretty(state))}
 % endfor
 % for number, field in this.fields_repeated:
-        ${field.name}=[], # ${''.join(field.pretty(state))}
+        ${field.name}=None, # ${''.join(field.pretty(state))}
 % endfor
 % for number, field in this.fields_optional:
         ${field.name}=${field.default}, # ${''.join(field.pretty(state))}
@@ -20,7 +20,10 @@ class ${this.fullname}(BaseMessage):
         self.${field.name} = ${field.name}
 % endfor
 % for index, field in this.fields_repeated:
-        self.${field.name} = ${field.name}
+        if ${field.name} is None:
+            self.${field.name} = []
+        else:
+            self.${field.name} = ${field.name}
 % endfor
 % for number, field in this.fields_optional:
         if ${field.name} != ${field.default}:

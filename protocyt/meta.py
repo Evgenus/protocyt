@@ -5,6 +5,11 @@ import inspect
 from .path import Path
 from .protoc import from_source
 
+__all__ = [
+    'ProtocoledMeta',
+    'ProtocoledClass',
+    ]
+
 class ProtocoledMeta(type):
     def __new__(mcs, name, bases, internals):
         doc = internals.get('__doc__')
