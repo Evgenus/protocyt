@@ -2,6 +2,10 @@
 from lib2to3.pytree import Leaf, Node
 from lib2to3.pygram import driver
 
+__all__ = [
+    'ProtoParser',
+    ]
+
 class PNode(Node):
     def __init__(self, grammar, *args, **kwargs):
         self.grammar = grammar

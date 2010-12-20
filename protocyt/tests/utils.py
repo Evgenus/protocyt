@@ -102,6 +102,30 @@ class OptionalTestCase(BaseTestCase):
         self.assertRaises(AttributeError, getattr, message3, 'value')
         self.assertRaises(AttributeError, getattr, message4, 'value')
 
+class ImmSimpleTestCase(SimpleTestCase):
+    '''
+    message Test {{
+        option immutable = true;
+        required {type} value = 1;
+    }}
+    '''
+
+class ImmRepeatableTestCase(RepeatableTestCase):
+    '''
+    message Test {{
+        option immutable = true;
+        repeated {type} value = 1;
+    }}
+    '''
+
+class ImmOptionalTestCase(OptionalTestCase):
+    '''
+    message Test {{
+        option immutable = true;
+        optional {type} value = 1;
+    }}
+    '''
+
 class TestSuite(unittest.TestSuite):
     tested_values = ()
 
@@ -110,11 +134,14 @@ class TestSuite(unittest.TestSuite):
         type_name = cls.__name__.replace('_', '')
         for number, value in enumerate(cls.tested_values):
             yield SimpleTestCase(type_name, value, number)
+            yield ImmSimpleTestCase(type_name, value, number)
 
         yield RepeatableTestCase(type_name, cls.tested_values, 0)
+        yield ImmRepeatableTestCase(type_name, cls.tested_values, 0)
 
         for number, value in enumerate(cls.tested_values):
             yield OptionalTestCase(type_name, value, number)
+            yield ImmOptionalTestCase(type_name, value, number)
 
     def __init__(self, tests=[]):
         tests = list(tests)

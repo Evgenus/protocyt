@@ -9,10 +9,25 @@ from textwrap import dedent
 from collections import deque
 from heapq import heappush, heappop
 import __builtin__
+import warnings
+import weakref
 # external
 import jinja2
 # internal
 from .path import Path
+from .record import Record
+
+__all__ = [
+    'State',
+    'Property',
+    'Field',
+    'Enum',
+    'Part',
+    'Extension',
+    'Compound',
+    'Message',
+    'Protocol',
+    ]
 
 class JinjaEnvironment(jinja2.Environment):
     'Few helpers added to environment'
@@ -74,12 +89,18 @@ class State(object):
     def __str__(self):
         return 'State{0!r}'.format(self.__dict__)
 
-class Property(object):
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
+class Import(object):
+    def __init__(self, filename):
+        self.filename = filename
     def set(self, where):
-        for name, value in self.kwargs.iteritems():
-            where.set_property(name, value)
+        where.set_import(self.filename)
+
+class Property(object):
+    def __init__(self, path, value):
+        self.path = path
+        self.value = value
+    def set(self, where):
+        where.set_property(self.path, self.value)
 
 class Field(object):
     TYPE_TAG = mergedicts(
@@ -104,6 +125,18 @@ class Field(object):
             return tag
         tag = self.TYPE_TAG[state.find_name(self.type).tag]
         return tag
+
+    def get_deserializer_name(self, state):
+        if self.type in self.TYPE_TAG:
+            decoder_name = self.type
+        else:
+            decoder_name = state.find_name(self.type).fullname
+
+        if self.kind in 'repeated':
+            return 'repeat_deserialize_' + decoder_name
+        else:
+            return 'deserialize_' + decoder_name
+
     def pretty(self, state):
         tag = self.TYPE_TAG.get(self.type)
         if tag is None:
@@ -158,19 +191,33 @@ class Extension(object):
         end = max_index if self.end == 'max' else int(self.end)
         return range(start, end+1)
 
-class Compond(Part):
+class Compound(Part):
     '''
     Base class for compound entities like protocol and message
     '''
     def __init__(self):
+        self.properties = Record()
         self.messages = {}
         self.enums = {}
         self.messages_order = []
+    def set_property(self, path, value):
+        path, name = path[:-1], path[-1]
+        location = self.properties
+        for part in path:
+            if part in location:
+                location = location[part]
+            else:
+                location.setdefault(part, Record())
+        location[name] = value
     def set_message(self, message):
+        if message.name in self.messages:
+            self.warn()
         self.messages[message.name] = message
         self.messages_order.append(message.name)
     def set_enum(self, enum):
         self.enums[enum.name] = enum
+    def warn(self, *args):
+        warnings.warn(*args)
     def pretty(self, state):
         for name, message in self.messages.iteritems():
             for part in message.pretty(state):
@@ -179,7 +226,7 @@ class Compond(Part):
             for part in enum.pretty(state):
                 yield self.indent1(part)
 
-class Message(Compond):
+class Message(Compound):
     '''
     Represents single message
     '''
@@ -190,6 +237,7 @@ class Message(Compond):
     tag = 'message'
     max_index = 0
     fullname = None
+    location = lambda : None
     def __init__(self, name, doc):
         self.name = name
         self.doc = doc
@@ -238,6 +286,7 @@ class Message(Compond):
         return result
 
     def set(self, where):
+        self.location = weakref.ref(where)
         where.set_message(self)
     def pretty(self, state):
         yield 'Message: {name}'.format(**self.__dict__)
@@ -249,15 +298,15 @@ class Message(Compond):
             yield part
         state.pop_ns()
 
-class Protocol(Compond):
+class Protocol(Compound):
     template = ENVIRONMENT.from_file(
         Path.from_file(__file__).up() / 'file.pytempl')
     apply_filter = False
     def __init__(self):
-        self.properties = {}
+        self.imports = []
+        self.imported_protocols = {}
         super(Protocol, self).__init__()
-    def set_property(self, name, value):
-        self.properties[name] = value
+
     def pretty(self, state):
         yield 'Protocol: {properties!r}'.format(**self.__dict__)
         for part in super(Protocol, self).pretty(state):
@@ -265,6 +314,14 @@ class Protocol(Compond):
     def data(self):
         state = State(self)
         return self.render(state)
+    def set_import(self, filename):
+        self.imports.append(filename)
+        proto = Protocol.from_file(filename)
+        self.imported_protocols[filename] = proto
+        for name in proto.messages_order:
+            self.set_message(proto.messages[name])
+        for name, enum in self.enums:
+            self.set_enum(enum)
     def find_name(self, *name):
         parts = deque(name)
         root = self

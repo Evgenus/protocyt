@@ -25,9 +25,8 @@ cdef extern from "Python.h":
     bint PyByteArray_Resize(object bytearray, Py_ssize_t len)
     char* PyByteArray_AS_STRING(object bytearray)
     Py_ssize_t PyByteArray_GET_SIZE(object bytearray)
-    PyObject* _PyObject_New(PyTypeObject *type)
-    PyObject* PyTuple_Pack(Py_ssize_t n, ...)
-
+    PyObject *PyObject_Init(object obj, object type)
+    
 cdef extern from "string.h":
     cdef int strlen(char* s) nogil
     cdef void* memcpy(void* dest, void* src, size_t len) nogil

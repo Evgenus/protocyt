@@ -12,4 +12,3 @@ for name in __all__:
     cls = getattr(_core, name)
     cls.__module__ = __name__
     namespace[name] = cls
-    
