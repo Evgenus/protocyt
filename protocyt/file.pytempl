@@ -14,8 +14,8 @@ cdef object repeat_${name}(char **pointer, char *end):
 cdef object repeat_${name}(char **pointer, char *end):
     cdef object value = []
     cdef uint64_t size =0
-    raw_deserialize_uint64(pointer, end, &size)
     while pointer[0]<end:
+        raw_deserialize_uint64(pointer, end, &size)
         value.append(${name}(pointer, pointer[0]+size))
     return value
 <%endmacro>
