@@ -21,17 +21,26 @@ cdef inline void serialize_${this.fullname}(object array, object self):
 
     % elif field.kind == 'repeated':
 
-    serialize_type(array, ${field.get_tag(state)}, ${field.index})
-    field_buff = bytearray()
+##~    serialize_type(array, ${field.get_tag(state)}, ${field.index})
+##~    field_buff = bytearray()
+##~    for item in self.${field.name}:
+##~        % if field.type in field.TYPE_TAG:
+##~        serialize_${field.type}(field_buff, item)
+##~        % else:
+##~            % set message = state.find_name(field.type)
+##~        serialize_with_length_${message.fullname}(field_buff, item)
+##~        % endif
+##~    serialize_uint64(array, PyByteArray_GET_SIZE(field_buff))
+##~    PySequence_InPlaceConcat(array, field_buff)
+
     for item in self.${field.name}:
+        serialize_type(array, ${field.get_tag(state)}, ${field.index})
         % if field.type in field.TYPE_TAG:
-        serialize_${field.type}(field_buff, item)
+        serialize_${field.type}(array, item)
         % else:
             % set message = state.find_name(field.type)
-        serialize_with_length_${message.fullname}(field_buff, item)
+        serialize_with_length_${message.fullname}(array, item)
         % endif
-    serialize_uint64(array, PyByteArray_GET_SIZE(field_buff))
-    PySequence_InPlaceConcat(array, field_buff)
 
     % elif field.kind == 'optional':
 
@@ -75,6 +84,16 @@ __names_${this.fullname}[${index}] = NULL
         % endif
     % endfor
 
+cdef char __kind_${this.fullname}[${this.max_index+1}]
+    % for index in range(0, this.max_index+1):
+        % if index in this.fields_by_index:
+__kind_${this.fullname}[${index}] = ${this.fields_by_index[index].get_kind_number(state)}
+        % else:
+__kind_${this.fullname}[${index}] = 0
+        % endif
+    % endfor
+
+
 cdef object deserialize_${this.fullname}(char **start, char *end):
     cdef uint64_t n, t, size
     cdef uint32_t type
@@ -82,6 +101,11 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
     cdef char *other_start
     cdef parsefunc decoder
     cdef char *name
+    
+% for index, field in this.fields_repeated:
+    PyObject_SetAttrString(self, "${field.name}", [])
+% endfor
+    
     while start[0]<end:
         if raw_deserialize_type(start, end, &type):
             raise makeDecodeError(start[0], "Can't deserialize type tag at [{0}] for value in message `${this.fullname}`")
@@ -96,13 +120,14 @@ cdef object deserialize_${this.fullname}(char **start, char *end):
                         raise makeDecodeError(start[0], "Can't deserialize lengts of field at [{0}] for message `${this.fullname}`")
                     if start[0] + size > end:
                         raise makeDecodeError(start[0], "Lengts of field at [{0}] goes outside message `${this.fullname}` boundaries")
-                    PyObject_SetAttrString(self, name,
-                        decoder(start, start[0] + size)
-                        )
+                    value = decoder(start, start[0] + size)
                 else:
-                    PyObject_SetAttrString(self, name,
-                        decoder(start, end)
-                        )
+                    value = decoder(start, end)
+                if __kind_${this.fullname}[n] == 2: # repeated
+                    container = PyObject_GetAttrString(self, name)
+                    PyList_Append(container, value)
+                else:
+                    PyObject_SetAttrString(self, name, value)
                 continue
         if t>5:
             raise makeDecodeError(start[0], "Invalid field tag at [{0}]")

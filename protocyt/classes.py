@@ -109,6 +109,11 @@ class Field(object):
         makedict('string,bytes,message,repeated', 2),
         makedict('fixed32,sfixed32,float', 5),
         )
+    KIND_NUM = dict(
+        required=1,
+        repeated=2,
+        optional=3,
+        )
     def __init__(self, index, name, type, default=None):
         self.index = int(index)
         self.name = name
@@ -132,10 +137,13 @@ class Field(object):
         else:
             decoder_name = state.find_name(self.type).fullname
 
-        if self.kind in 'repeated':
-            return 'repeat_deserialize_' + decoder_name
-        else:
-            return 'deserialize_' + decoder_name
+        #if self.kind in 'repeated':
+        #    return 'repeat_deserialize_' + decoder_name
+        #else:
+        return 'deserialize_' + decoder_name
+
+    def get_kind_number(self, state):
+        return self.KIND_NUM.get(self.kind, 0)
 
     def pretty(self, state):
         tag = self.TYPE_TAG.get(self.type)
