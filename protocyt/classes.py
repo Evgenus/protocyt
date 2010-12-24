@@ -7,6 +7,7 @@ generation.
 import re
 from textwrap import dedent
 from collections import deque
+import functools
 from heapq import heappush, heappop
 import __builtin__
 import warnings
@@ -29,13 +30,7 @@ __all__ = [
     'Protocol',
     ]
 
-class JinjaEnvironment(jinja2.Environment):
-    'Few helpers added to environment'
-    def from_file(self, path):
-        with path.open('rt') as stream:
-            return self.from_string(stream.read())
-
-ENVIRONMENT = JinjaEnvironment(
+ENVIRONMENT = jinja2.Environment(
     block_start_string='<%',
     block_end_string='>',
     variable_start_string='${',
@@ -44,6 +39,7 @@ ENVIRONMENT = JinjaEnvironment(
     comment_end_string='</%doc>',
     line_statement_prefix='%',
     line_comment_prefix='##~',
+    loader=jinja2.PackageLoader('protocyt', package_path='', encoding='utf-8')
     )
 
 def makedict(names, default=None):
@@ -106,25 +102,17 @@ class Field(object):
     TYPE_TAG = mergedicts(
         makedict('int32,int64,uint32,uint64,sint32,sint64,bool,enum', 0),
         makedict('fixed64,sfixed64,double', 1),
-        makedict('string,bytes,message,repeated', 2),
+        makedict('string,bytes,message', 2),
         makedict('fixed32,sfixed32,float', 5),
         )
-    KIND_NUM = dict(
-        required=1,
-        repeated=2,
-        optional=3,
-        )
-    def __init__(self, index, name, type, default=None):
+    def __init__(self, index, name, type, options):
         self.index = int(index)
         self.name = name
         self.type = type
-        self.default = default
+        self.options = options
     def set(self, where):
         where.set_field(self)
     def get_tag(self, state):
-        tag = self.TYPE_TAG.get(self.kind)
-        if tag is not None:
-            return tag
         tag = self.TYPE_TAG.get(self.type)
         if tag is not None:
             return tag
@@ -137,13 +125,22 @@ class Field(object):
         else:
             decoder_name = state.find_name(self.type).fullname
 
-        #if self.kind in 'repeated':
-        #    return 'repeat_deserialize_' + decoder_name
-        #else:
-        return 'deserialize_' + decoder_name
+        if self.kind == 'repeated' and self.is_packed(state):
+            return 'repeat_deserialize_' + decoder_name
+        else:
+            return 'deserialize_' + decoder_name
 
-    def get_kind_number(self, state):
-        return self.KIND_NUM.get(self.kind, 0)
+    def get_special_options(self, state):
+        number = 0
+        if self.kind == 'repeated' and not self.is_packed(state):
+            number |= 1
+        return number
+
+    def get_default_value(self, state):
+        return self.options.get('default', None)
+
+    def is_packed(self, state):
+        return self.options.get('packed', False)
 
     def pretty(self, state):
         tag = self.TYPE_TAG.get(self.type)
@@ -183,6 +180,7 @@ class Part(object):
         return self.template.render(
             this=self,
             state=state,
+            functools=functools,
             **__builtin__.__dict__)
 
 class Extension(object):
@@ -226,6 +224,13 @@ class Compound(Part):
         self.enums[enum.name] = enum
     def warn(self, *args):
         warnings.warn(*args)
+
+    def in_debug(self, state):
+        try:
+            return state.protocol.properties.debug
+        except AttributeError:
+            return False
+
     def pretty(self, state):
         for name, message in self.messages.iteritems():
             for part in message.pretty(state):
@@ -238,10 +243,8 @@ class Message(Compound):
     '''
     Represents single message
     '''
-    template = ENVIRONMENT.from_file(
-        Path.from_file(__file__).up() / 'message.pytempl')
-    structure = ENVIRONMENT.from_file(
-        Path.from_file(__file__).up() / 'structure.pytempl')
+    template = ENVIRONMENT.get_template('message.pytempl')
+    structure = ENVIRONMENT.get_template('structure.pytempl')
     tag = 'message'
     max_index = 0
     fullname = None
@@ -289,6 +292,7 @@ class Message(Compound):
         result = self.structure.render(
             this=self,
             state=state,
+            functools=functools,
             **__builtin__.__dict__)
         state.pop_ns()
         return result
@@ -296,6 +300,7 @@ class Message(Compound):
     def set(self, where):
         self.location = weakref.ref(where)
         where.set_message(self)
+
     def pretty(self, state):
         yield 'Message: {name}'.format(**self.__dict__)
         state.push_ns(self.name)
@@ -307,8 +312,7 @@ class Message(Compound):
         state.pop_ns()
 
 class Protocol(Compound):
-    template = ENVIRONMENT.from_file(
-        Path.from_file(__file__).up() / 'file.pytempl')
+    template = ENVIRONMENT.get_template('file.pytempl')
     apply_filter = False
     def __init__(self):
         self.imports = []

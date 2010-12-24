@@ -1,6 +1,6 @@
 from protocyt import protoc, path
 
 _dirname = path.Path.from_file(__file__).up()
-protoc.from_file(_dirname / '_core.proto', _dirname, check=True)
+protoc.from_file(_dirname / '_core.proto', _dirname, check=True, debug=${debug})
 
 from _core import *

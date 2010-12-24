@@ -64,10 +64,18 @@ def protocol_from_file(filename):
 # Dependency injection to make protocol import other protocols
 classes.Protocol.from_file = staticmethod(protocol_from_file)
 
-def from_source(source, name=None, output_dir=None, check=False, keep=False):
+def from_source(source,
+                name=None,
+                output_dir=None,
+                check=False,
+                keep=False,
+                debug=False,
+                ):
     out_file = (output_dir / name).add_ext(sysconfig.get_config_var('SO'))
 
     protocol = protocol_from_source(source, output_dir)
+    if debug:
+        protocol.set_property(('debug',), debug)
 
     temp_dir = Path.from_file(tempfile.gettempdir()) / name
     if not temp_dir.exists():
@@ -145,7 +153,7 @@ def from_source(source, name=None, output_dir=None, check=False, keep=False):
 
     return result
 
-def from_file(filename, output_dir=None, check=False, keep=True):
+def from_file(filename, output_dir=None, check=False, keep=True, debug=False):
     name = filename.filename
     with open(filename.str()) as stream:
         source = stream.read()
@@ -153,9 +161,13 @@ def from_file(filename, output_dir=None, check=False, keep=True):
     if output_dir is None:
         output_dir = filename.up()
 
-    return from_source(source, name, output_dir, check=check, keep=keep)
+    return from_source(source, name, output_dir,
+                        check=check,
+                        keep=keep,
+                        debug=debug,
+                        )
 
-def package_from_file(filename, output_dir=None):
+def package_from_file(filename, output_dir=None, debug=False):
     name = filename.filename
     with open(filename.str()) as stream:
         source = stream.read()
@@ -174,13 +186,12 @@ def package_from_file(filename, output_dir=None):
         stream.write(source)
 
     from classes import ENVIRONMENT
-    template = ENVIRONMENT.from_file(
-        Path.from_file(__file__).up() / 'package.pytempl')
+    template = ENVIRONMENT.get_template('package.pytempl')
 
     package_file = output_dir / '__init__.py'
 
     with open(package_file.str(), 'wt') as stream:
-        stream.write(template.render())
+        stream.write(template.render(debug=debug))
 
 def main(options):
     filename = Path.from_file(options.input)
@@ -189,9 +200,14 @@ def main(options):
     else:
         output_dir = Path.from_file(options.out_dir)
     if options.package:
-        package_from_file(filename, output_dir)
+        package_from_file(filename, output_dir,
+                            debug=options.debug,
+                            )
     else:
-        result = from_file(filename, output_dir, keep=options.keep)
+        result = from_file(filename, output_dir,
+                            keep=options.keep,
+                            debug=options.debug,
+                            )
         if options.keep:
             print 'Temporary files places at {0:s}'.format(result)
 
@@ -213,6 +229,10 @@ def make_parser():
     parser.add_argument('--keep', '-k',
         action='store_true', dest='keep', default=False,
         help="Keep intermediate files (*.pyx, *.c)")
+    parser.add_argument('--debug', '-d',
+        action='store_true', dest='debug', default=False,
+        help="Add callbacks into deserialization functions")
+
     return parser
 
 if __name__ == '__main__':

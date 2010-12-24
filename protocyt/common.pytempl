@@ -1,0 +1,18 @@
+<%macro message_extra_args(state)>${'debugger' if this.in_debug(state) else ''}<%endmacro>
+<%macro types_extra_args(state)>${'debugger' if this.in_debug(state) else ''}<%endmacro>
+
+<%macro with_type_debug(name, indent=1, define=True)>
+% if this.in_debug(state):
+${'    '*indent}${'cdef char *' if define else ''}__start_debug = pointer[0]
+% endif
+${caller()}
+% if this.in_debug(state):
+${'    '*indent}debugger.callback("${name}", PyString_FromStringAndSize(__start_debug, pointer[0]-__start_debug))
+% endif
+<%endmacro>
+
+<%macro signal(type, name, indent=1)>
+% if this.in_debug(state):
+${'    '*indent}debugger.signal("${type}", ${name})
+% endif
+<%endmacro>

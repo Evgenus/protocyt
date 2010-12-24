@@ -19,6 +19,7 @@ class PackagesTest(unittest.TestCase):
         proto_file = self.path / 'package.proto'
         with proto_file.open('wt') as stream:
             stream.write(source)
+        debug = False
         protoc.package_from_file(proto_file, self.path)
         proto_file.remove()
         import package

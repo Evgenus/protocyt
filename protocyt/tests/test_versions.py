@@ -27,6 +27,30 @@ class New1(meta.ProtocoledClass):
     }
     '''
 
+class Old1p(meta.ProtocoledClass):
+    '''
+    message Old1p {
+      required int32 a = 1;
+      repeated int32 b = 2 [packed=true];
+      optional int32 c = 3;
+      required int32 d = 4;
+      repeated int32 e = 5 [packed=true];
+      optional int32 f = 6;
+    }
+    '''
+
+class New1p(meta.ProtocoledClass):
+    '''
+    message New1p {
+      required int32 d = 4;
+      repeated int32 e = 5 [packed=true];
+      optional int32 f = 6;
+      required int32 g = 7;
+      repeated int32 h = 8 [packed=true];
+      optional int32 i = 9;
+    }
+    '''
+
 class Old2(meta.ProtocoledClass):
     '''
     message Old2 {
@@ -126,8 +150,25 @@ class ExceptionsTest(unittest.TestCase):
         self.assertTrue(hasattr(instance, 'f'))
 
         self.assertFalse(hasattr(instance, 'g'))
-        self.assertFalse(hasattr(instance, 'h'))
-        self.assertFalse(hasattr(instance, 'i'))
+        self.assertTrue(hasattr(instance, 'h'))
+        self.assertTrue(hasattr(instance, 'i'))
+
+    def test_1p(self):
+        'changed fields set, some fields was skiped'
+        ba = bytearray()
+        Old1p(a=1, b=[1, 2, 3], c=4, d=5, e=[6, 7, 8], f=9).serialize(ba)
+        instance = New1p.deserialize(ba)
+        self.assertFalse(hasattr(instance, 'a'))
+        self.assertFalse(hasattr(instance, 'b'))
+        self.assertFalse(hasattr(instance, 'c'))
+
+        self.assertTrue(hasattr(instance, 'd'))
+        self.assertTrue(hasattr(instance, 'e'))
+        self.assertTrue(hasattr(instance, 'f'))
+
+        self.assertFalse(hasattr(instance, 'g'))
+        self.assertTrue(hasattr(instance, 'h'))
+        self.assertTrue(hasattr(instance, 'i'))
 
     def test_2(self):
         'bad message'

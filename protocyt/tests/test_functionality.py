@@ -42,7 +42,7 @@ class Class3(meta.ProtocoledClass):
 class Class4(meta.ProtocoledClass):
     '''
     message Class4 {
-      repeated int32 d = 4;
+      repeated int32 d = 4 [packed=true];
       extensions 0 to max;
     }
     '''

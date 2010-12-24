@@ -18,6 +18,19 @@ def itail(iterable, size=1):
         yield iterator.next()
     yield iterator
 
+def unchain(iterable, size=1, tail=False):
+    buff = []
+    counter = 0
+    for element in iterable:
+        buff.append(element)
+        counter +=1
+        if counter == size:
+            counter = 0
+            yield tuple(buff)
+            buff = []
+    if tail and counter>0:
+        yield tuple(buff)
+
 class TreeVisitor(object):
     '''
     Generic 2to3 AST-visitor
@@ -101,7 +114,8 @@ class CodeGenerator(TreeVisitor):
         fieldTail: type indent "=" NUMBER [ "[" fieldOption ( "," fieldOption )* "]" ] ";"
         '''
         type, name, index, options = itail(self.visit(*node.children), 3)
-        yield classes.Field(index, name, type)
+        options = dict(unchain(options, 2))
+        yield classes.Field(index, name, type, options)
 
     def on_extension(self, node):
         '''
@@ -130,9 +144,9 @@ class CodeGenerator(TreeVisitor):
         try:
             ivalue = int(value)
         except ValueError:
-            return value
+            yield value
         else:
-            return ivalue if value == ivalue else value
+            yield ivalue if value == ivalue else value
  
     def on_constant(self, node):
         if isinstance(node.children[0], Leaf):

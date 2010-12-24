@@ -2,9 +2,15 @@
 ${this.messages[message].render_structure(state)}
 % endfor
 
+% from 'common.pytempl' import message_extra_args with context
+
 class ${this.fullname}(BaseMessage):
     __slots__ = ${repr(tuple(this.fields_by_name))}
     _extended_fields_ = ${repr(set(this.extended_fields))}
+% for number, field in this.fields_optional:
+    ${field.name} = ${field.get_default_value(state)}
+% endfor
+
     def __init__(self,
 % for number, field in this.fields_required:
         ${field.name}, # ${''.join(field.pretty(state))}
@@ -13,7 +19,7 @@ class ${this.fullname}(BaseMessage):
         ${field.name}=None, # ${''.join(field.pretty(state))}
 % endfor
 % for number, field in this.fields_optional:
-        ${field.name}=${field.default}, # ${''.join(field.pretty(state))}
+        ${field.name}=${field.get_default_value(state)}, # ${''.join(field.pretty(state))}
 % endfor
         ):
 % for index, field in this.fields_required:
@@ -26,16 +32,18 @@ class ${this.fullname}(BaseMessage):
             self.${field.name} = ${field.name}
 % endfor
 % for number, field in this.fields_optional:
-        if ${field.name} != ${field.default}:
+        if ${field.name} != ${field.get_default_value(state)}:
             self.${field.name} = ${field.name}
 % endfor
+% if not this.fields_by_name:
         pass
+% endif
 
     def serialize(self, array):
         serialize_${this.fullname}(array, self)
 
-    def deserialize(cls, array):
-        return wrapped_deserialize_${this.fullname}(array)
+    def deserialize(cls, array, ${message_extra_args(state)}):
+        return wrapped_deserialize_${this.fullname}(array, ${message_extra_args(state)})
     deserialize = classmethod(deserialize)
 
     def __eq__(self, other_msg):
@@ -47,7 +55,7 @@ class ${this.fullname}(BaseMessage):
             and self.${field.name} == other_msg.${field.name}
 % endfor
 % for number, field in this.fields_optional:
-            and getattr(self, "${field.name}", ${field.default}) == getattr(other_msg, "${field.name}", ${field.default})
+            and getattr(self, "${field.name}", ${field.get_default_value(state)}) == getattr(other_msg, "${field.name}", ${field.get_default_value(state)})
 % endfor
             )
 
