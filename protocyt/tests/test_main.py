@@ -83,7 +83,19 @@ class _bool(utils.TestSuite):
     packed_size = '%02X' % 2
 
 class _string(utils.TestSuite):
-    tested_values = ['', 'testing', ':)'*300]
+    def wrap_strings(s): return s.decode('utf-8') if hasattr(s, 'decode') else s
+    tested_values = list(map(wrap_strings, ['', 'testing', ':)'*300,]))
+    T = 2
+    encoded_values = ['', '74 65 73 74 69 6E 67', ' '.join(['3A 29']*300)]
+    extra_log = [
+        [('cb', 'size', '00')],
+        [('cb', 'size', '07')],
+        [('cb', 'size', 'D8 04')],
+        ]
+    packed_size = 'E3 04'
+
+class _bytes(utils.TestSuite):
+    tested_values = [b'', b'testing', b':)'*300]
     T = 2
     encoded_values = ['', '74 65 73 74 69 6E 67',  ' '.join(['3A 29']*300)]
     extra_log = [
@@ -97,13 +109,13 @@ def make_float(value):
     return struct.unpack('f', struct.pack('f', value))[0]
 
 class _float(utils.TestSuite):
-    tested_values = map(make_float, [
+    tested_values = list(map(make_float, [
         0.0,
         4.94e-324, 1e-310, 7e-308, 6.626e-34,
         0.1, 0.5, 3.14, 263.44582062374053, 6.022e23, 1e30,
         -4.94e-324, -1e-310, -7e-308, -6.626e-34,
         -0.1, -0.5, -3.14, -263.44582062374053, -6.022e23, -1e30,
-        ])
+        ]))
     T = 5
     encoded_values = [
         '00 00 00 00', '00 00 00 00', '00 00 00 00', '00 00 00 00',
@@ -119,13 +131,13 @@ def make_double(value):
     return struct.unpack('d', struct.pack('d', value))[0]
 
 class _double(utils.TestSuite):
-    tested_values = map(make_double, [
+    tested_values = list(map(make_double, [
         0.0,
         4.94e-324, 1e-310, 7e-308, 6.626e-34,
         0.1, 0.5, 3.14, 263.44582062374053, 6.022e23, 1e30,
         -4.94e-324, -1e-310, -7e-308, -6.626e-34,
         -0.1, -0.5, -3.14, -263.44582062374053, -6.022e23, -1e30,
-        ])
+        ]))
     T = 1
     encoded_values = [
         '00 00 00 00 00 00 00 00', '01 00 00 00 00 00 00 00',
@@ -143,7 +155,7 @@ class _double(utils.TestSuite):
     packed_size = 'A8 01'
 
 def get_suites():
-    for value in globals().itervalues():
+    for value in globals().values():
         if (isinstance(value, type)
         and issubclass(value, (unittest.TestSuite, unittest.TestCase))):
             yield value()
@@ -159,7 +171,5 @@ def test_all():
             yield test
 
 if __name__ == '__main__':
-    import protocyt
-    print protocyt.__file__
     alltests = unittest.TestSuite(get_suites())
     unittest.TextTestRunner(verbosity=2).run(alltests)

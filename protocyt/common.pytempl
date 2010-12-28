@@ -7,7 +7,7 @@ ${'    '*indent}${'cdef char *' if define else ''}__start_debug = pointer[0]
 % endif
 ${caller()}
 % if this.in_debug(state):
-${'    '*indent}debugger.callback("${name}", PyString_FromStringAndSize(__start_debug, pointer[0]-__start_debug))
+${'    '*indent}debugger.callback("${name}", PyBytes_FromStringAndSize(__start_debug, pointer[0]-__start_debug))
 % endif
 <%endmacro>
 

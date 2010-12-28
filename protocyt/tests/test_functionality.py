@@ -5,7 +5,7 @@ import inspect
 from protocyt import meta, protoc, classes
 
 def make_hex(string):
-    return ' '.join('%02X' % ord(i) for i in string)
+    return ' '.join('%02X' % i for i in string)
 
 class Class1(meta.ProtocoledClass):
     '''
@@ -24,7 +24,7 @@ class Class1_2(meta.ProtocoledClass):
 class Class2(meta.ProtocoledClass):
     '''
     message Class2 {
-      required string b = 2;
+      required bytes b = 2;
     }
     '''
 
@@ -63,13 +63,14 @@ class FunctionalityTest(unittest.TestCase):
         instance = Class1(150)
         ba = bytearray()
         instance.serialize(ba)
-        self.assertEqual(make_hex(str(ba)), '08 96 01')
+        self.assertEqual(make_hex(ba), '08 96 01')
 
     def test_02(self):
         'string output'
         instance = Class1(150)
-        self.assertEqual(
-            make_hex(instance.SerializePartialToString()), '08 96 01')
+        value = instance.SerializePartialToString()
+        ba = bytearray(value)
+        self.assertEqual(make_hex(ba), '08 96 01')
 
     def test_03(self):
         '__ne__'
@@ -85,24 +86,24 @@ class FunctionalityTest(unittest.TestCase):
 
     def test_05(self):
         'output'
-        instance = Class2('testing')
+        instance = Class2(b'testing')
         ba = bytearray()
         instance.serialize(ba)
-        self.assertEqual(make_hex(str(ba)), '12 07 74 65 73 74 69 6E 67')
+        self.assertEqual(make_hex(ba), '12 07 74 65 73 74 69 6E 67')
 
     def test_06(self):
         'output'
         instance = Class3(Class3.Class1(150))
         ba = bytearray()
         instance.serialize(ba)
-        self.assertEqual(make_hex(str(ba)), '1A 03 08 96 01')
+        self.assertEqual(make_hex(ba), '1A 03 08 96 01')
 
     def test_07(self):
         'output'
         instance = Class4([3, 270, 86942])
         ba = bytearray()
         instance.serialize(ba)
-        self.assertEqual(make_hex(str(ba)), '22 06 03 8E 02 9E A7 05')
+        self.assertEqual(make_hex(ba), '22 06 03 8E 02 9E A7 05')
         self.assertEqual(instance.Extensions['d'], instance.d)
         self.assertEqual(instance.Extensions.d, instance.d)
 

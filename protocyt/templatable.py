@@ -15,13 +15,13 @@ class DocTemplatable(object):
         >>> class InvalidName(DocTemplatable, NameError):
         ...    'Name `{0}` is invalid in my world'
         ...
-        >>> print InvalidName('BadName')
+        >>> print(InvalidName('BadName'))
         Name `BadName` is invalid in my world
 
         >>> class InvalidAttribute(DocTemplatable, AttributeError):
         ...    'Name `{name}` is invalid in my world'
         ...
-        >>> print InvalidAttribute(name='BadName')
+        >>> print(InvalidAttribute(name='BadName'))
         Name `BadName` is invalid in my world
     """
     args = ()

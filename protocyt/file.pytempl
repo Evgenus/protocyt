@@ -1,4 +1,4 @@
-% for name, value in this.properties.iteritems():
+% for name, value in this.properties.items():
 # ${name}: ${value}
 % endfor
 
@@ -35,18 +35,11 @@ from cpython cimport *
 ${this.title('_', 'EXTERNALS')}
 
 cdef extern from "Python.h":
-    bint PyByteArray_Check(object o)
-    bint PyByteArray_CheckExact(object o)
-    object PyByteArray_FromObject(object o)
-    object PyByteArray_FromStringAndSize(char *string, Py_ssize_t len)
-    object PyByteArray_Concat(object a, object b)
-    Py_ssize_t PyByteArray_Size(object bytearray)
-    char* PyByteArray_AsString(object bytearray)
     bint PyByteArray_Resize(object bytearray, Py_ssize_t len)
     char* PyByteArray_AS_STRING(object bytearray)
     Py_ssize_t PyByteArray_GET_SIZE(object bytearray)
-    PyObject *PyObject_Init(object obj, object type)
-    
+    object PyUnicode_FromStringAndSize(char *buff, Py_ssize_t len)
+
 cdef extern from "string.h":
     cdef int strlen(char* s) nogil
     cdef void* memcpy(void* dest, void* src, size_t len) nogil
@@ -64,19 +57,7 @@ cdef extern from "stdint.h":
     ctypedef unsigned long int uint32_t
     ctypedef long int int32_t
 
-cdef extern from "Python.h":
-    object PyString_FromStringAndSize(char *v, size_t len)
-    int PyString_AsStringAndSize(
-        object obj, char **buffer, Py_ssize_t* length) except -1
-
-#compatibility with python3
-
 ${this.title('_', 'HELPERS')}
-
-try:
-    bytes
-except:
-    bytes = str
 
 class EncodeError(Exception):
     pass
@@ -86,7 +67,7 @@ class InternalDecodeError(Exception):
 
 cdef inline object makeDecodeError(char* pointer, char* message):
     cdef uint64_t locator = <uint64_t>pointer
-    return InternalDecodeError(PyLong_FromUnsignedLongLong(locator), PyString_FromString(message))
+    return InternalDecodeError(PyLong_FromUnsignedLongLong(locator), message)
 
 class DecodeError(Exception):
     def __init__(self, pointer, message):
@@ -125,7 +106,7 @@ class BaseMessage(object):
     def SerializePartialToString(self):
         array = bytearray()
         self.serialize(array)
-        return str(array)
+        return bytes(array)
 
     def ClearExtension(self, name):
         self._extended_fields_.remove(name)
@@ -452,7 +433,7 @@ cdef inline void serialize_bytes(object array, object n):
     cdef object spare = PySequence_InPlaceConcat(array, n)
 
 % call make_deserializer(state, 'bytes')
-    cdef object value = deserialize_string(pointer, end, ${types_extra_args(state)})
+    cdef object value = PyBytes_FromStringAndSize(pointer[0], end-pointer[0])
     pointer[0] = end
 % endcall
     return value
@@ -462,10 +443,13 @@ ${make_repeatable_deserializer_with_length(state, 'bytes')}
 ${this.title(' ', 'string')}
 
 cdef inline void serialize_string(object array, object n):
-    serialize_bytes(array, n)
+    cdef object encoded = PyUnicode_AsUTF8String(n)
+    cdef Py_ssize_t len = PySequence_Length(encoded)
+    serialize_uint64(array, len)
+    cdef object spare = PySequence_InPlaceConcat(array, encoded)
 
 % call make_deserializer(state, 'string')
-    cdef object value = PyString_FromStringAndSize(pointer[0], end-pointer[0])
+    cdef object value = PyUnicode_FromStringAndSize(pointer[0], end-pointer[0])
     pointer[0] = end
 % endcall
     return value
@@ -548,7 +532,7 @@ __decoder_bytype[5] = deserialize_fixed32
 
 ${this.title('_', 'CORE ALGORITHMS')}
 
-% for message in this.messages.itervalues():
+% for message in this.messages.values():
 ${message.render(state)}
 % endfor
 
@@ -559,7 +543,7 @@ ${this.messages[message].render_structure(state)}
 % endfor
 
 <%macro message_names(obj)>
-% for name, message in obj.messages.iteritems():
+% for name, message in obj.messages.items():
     "${message.fullname}",
 ${message_names(message)}
 % endfor

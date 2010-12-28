@@ -131,7 +131,7 @@ class Old6(meta.ProtocoledClass):
 class New6(meta.ProtocoledClass):
     '''
     message New6 {
-      required string a = 1;
+      required bytes a = 1;
     }
     '''
 
@@ -151,7 +151,7 @@ class ExceptionsTest(unittest.TestCase):
 
         self.assertFalse(hasattr(instance, 'g'))
         self.assertTrue(hasattr(instance, 'h'))
-        self.assertTrue(hasattr(instance, 'i'))
+        self.assertFalse(hasattr(instance, 'i'))
 
     def test_1p(self):
         'changed fields set, some fields was skiped'
@@ -168,7 +168,7 @@ class ExceptionsTest(unittest.TestCase):
 
         self.assertFalse(hasattr(instance, 'g'))
         self.assertTrue(hasattr(instance, 'h'))
-        self.assertTrue(hasattr(instance, 'i'))
+        self.assertFalse(hasattr(instance, 'i'))
 
     def test_2(self):
         'bad message'
@@ -209,7 +209,7 @@ class ExceptionsTest(unittest.TestCase):
         Old6(a=Old6.SubMessage(150)).serialize(ba)
         instance1 = Old6.deserialize(ba)
         instance2 = New6.deserialize(ba)
-        self.assertEqual(instance2.a, '\x08\x96\x01')
+        self.assertEqual(instance2.a, b'\x08\x96\x01')
         ba_sub = bytearray(instance2.a)
         sub = Old6.SubMessage.deserialize(ba_sub)
         self.assertEqual(sub.a, 150)

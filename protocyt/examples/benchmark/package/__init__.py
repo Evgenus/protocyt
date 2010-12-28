@@ -3,7 +3,7 @@ from protocyt import protoc, path
 _dirname = path.Path.from_file(__file__).up()
 protoc.from_file(_dirname / '_core.proto', _dirname, check=True)
 
-import _core
+from . import _core
 
 __all__ = _core.__all__
 

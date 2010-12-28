@@ -14,8 +14,8 @@ __all__ = [
 def itail(iterable, size=1):
     'Yields `size` elements of iterable and iterator over rest of elements'
     iterator = iter(iterable)
-    for _ in xrange(size):
-        yield iterator.next()
+    for _ in range(size):
+        yield next(iterator)
     yield iterator
 
 def unchain(iterable, size=1, tail=False):

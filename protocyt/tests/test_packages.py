@@ -22,14 +22,14 @@ class PackagesTest(unittest.TestCase):
         debug = False
         protoc.package_from_file(proto_file, self.path)
         proto_file.remove()
-        import package
+        from . import package
         ba = bytearray()
         package.Test(150).serialize(ba)
         package.Test.deserialize(ba)
         del sys.modules[package.__name__]
         path = self.path / 'package'
         stat1 = path.stat()
-        import package
+        from . import package
         stat2 = path.stat()
         self.assertEqual(stat1, stat2)
 

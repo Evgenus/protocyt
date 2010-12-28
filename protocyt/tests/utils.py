@@ -7,7 +7,10 @@ import sys
 from protocyt import protoc, path
 
 def make_hex(string):
-    return ' '.join('%02X' % ord(i) for i in string)
+    if isinstance(string, str):
+        return ' '.join('%02X' % ord(i) for i in string)
+    else:
+        return ' '.join('%02X' % i for i in string)
 
 def make_type_tag(n, t):
     return '%02X' % (n<<3 | t)
@@ -41,6 +44,7 @@ class BaseTestCase(unittest.TestCase):
             name,
             path.Path.from_file(__file__).up() / 'modules',
             check=True,
+            keep=True,
             )
         module = __import__('modules.' + name, globals(), locals(), [], -1)
         self.module = getattr(module, name)
@@ -91,7 +95,7 @@ class SimpleTestDebugCase(BaseTestDebugCase):
         def shuffle():
             yield ('sg', 'enter', 'Test')
             yield ('cb', 'type', make_type_tag(1, self.T))
-            yield ('sg', 'field', 'value')
+            yield ('sg', 'field', b'value')
             for extra in self.extra_log:
                 yield extra
             yield ('cb', self.tested_type, self.encoded_value)
@@ -112,7 +116,7 @@ class SimpleTestDebugCase(BaseTestDebugCase):
         message1 = self.module.Test(self.tested_value)
         ba = bytearray()
         message1.serialize(ba)
-        self.assertEqual(make_hex(str(ba)), self.make_data())
+        self.assertEqual(make_hex(ba), self.make_data())
         message2 = self.module.Test.deserialize(ba, debugger)
         self.assertEqual(debugger.log, self.make_log())
         self.assertEqual(message1.value, message2.value)
@@ -145,7 +149,7 @@ class RepeatableTestDebugCase(BaseTestDebugCase):
             tag = make_type_tag(1, self.T)
             for value, extra in zip(self.encoded_value, self.extra_log):
                 yield ('cb', 'type', tag)
-                yield ('sg', 'field', 'value')
+                yield ('sg', 'field', b'value')
                 for _ in extra:
                     yield _
                 yield ('cb', self.tested_type, value)
@@ -157,7 +161,6 @@ class RepeatableTestDebugCase(BaseTestDebugCase):
             tag = make_type_tag(1, self.T)
             for value, extra in zip(self.encoded_value, self.extra_log):
                 yield tag
-                print extra
                 for _ in extra:
                     yield _[2]
                 if value:
@@ -169,7 +172,7 @@ class RepeatableTestDebugCase(BaseTestDebugCase):
         message1 = self.module.Test(self.tested_value)
         ba = bytearray()
         message1.serialize(ba)
-        self.assertEqual(make_hex(str(ba)), self.make_data())
+        self.assertEqual(make_hex(ba), self.make_data())
         message2 = self.module.Test.deserialize(ba, debugger)
         self.assertEqual(message1.value, message2.value)
         self.assertEqual(message1, message2)
@@ -200,7 +203,7 @@ class RepeatablePackedTestDebugCase(RepeatableTestDebugCase):
             yield ('sg', 'enter', 'Test')
             tag = make_type_tag(1, 2)
             yield ('cb', 'type', tag)
-            yield ('sg', 'field', 'value')
+            yield ('sg', 'field', b'value')
             yield ('cb', 'size', self.packed_size)
             for value in self.encoded_value:
                 yield ('cb', self.tested_type, value)
@@ -227,7 +230,7 @@ class OptionalTestCase(BaseTestCase):
     }}
     '''
     def runTest(self):
-        message1 = self.module.Test(value = self.tested_value)
+        message1 = self.module.Test(value=self.tested_value)
         ba = bytearray()
         message1.serialize(ba)
         message2 = self.module.Test.deserialize(ba)
@@ -245,6 +248,9 @@ class OptionalTestCase(BaseTestCase):
         self.assertNotEqual(message1, message4)
         self.assertNotEqual(message2, message3)
         self.assertNotEqual(message2, message4)
+        
+        self.assertRaises(AttributeError, getattr, message3, 'value')
+        self.assertRaises(AttributeError, getattr, message4, 'value')
 
 class TestSuite(unittest.TestSuite):
     tested_values = ()
@@ -258,6 +264,7 @@ class TestSuite(unittest.TestSuite):
             yield SimpleTestCase(type_name, value, number)
             yield SimpleTestDebugCase(
                 type_name, value, cls.T, encoded, extra, number)
+            pass
 
         yield RepeatableTestCase(type_name, cls.tested_values, 0)
         yield RepeatableTestDebugCase(type_name, cls.tested_values, cls.T,

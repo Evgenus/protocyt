@@ -28,5 +28,4 @@ class ProtocoledMeta(type):
         else:
             return type.__new__(mcs, name, bases, internals)
 
-class ProtocoledClass(object):
-    __metaclass__ = ProtocoledMeta
+ProtocoledClass = ProtocoledMeta('ProtocoledClass', (object,), {})

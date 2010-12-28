@@ -1,14 +1,18 @@
+from __future__ import print_function
 # standart
 import sys
-import cPickle as pickle
 from time import time
 from operator import itemgetter
 from functools import partial
 import webbrowser
 from collections import defaultdict
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 # internal
 from protocyt import path
-from package import Node
+from .package import Node
 
 def createNode(size, stop):
     if stop>0:
@@ -25,20 +29,20 @@ if __name__=='__main__':
         yield 'count', count
 
         def wrap_testing(name, tester):
-            print name,
+            print(name, end='')
             start = time()
             counter = 0
             while time() - start < 1 or counter < 10:
                 counter+=1
                 tester()
             end = time()
-            print
+            print()
             result = 1000 * (end - start) / counter
-            print '{0:.3f} milliseconds per {1}'.format(result, name)
+            print('{0:.3f} milliseconds per {1}'.format(result, name))
 
             yield name, result
 
-        print 'Initialization [{0}-{1}] {2}'.format(size, stop, count)
+        print('Initialization [{0}-{1}] {2}'.format(size, stop, count))
         tree = createNode(size, stop)
 
         def test_serialize():
@@ -73,7 +77,7 @@ if __name__=='__main__':
         count = sum(size**i for i in range(stop+1))
         yield 'count', count
 
-        print 'Initialization [{0}-{1}] {2}'.format(size, stop, count)
+        print('Initialization [{0}-{1}] {2}'.format(size, stop, count))
         tree = createNode(size, stop)
 
         def test_serialize():
@@ -85,10 +89,10 @@ if __name__=='__main__':
             return len(pickle.dumps(tree, 2))
 
         result = test_serialize()
-        print 'serialize', result
+        print('serialize', result)
         yield 'serialize', result
         result = test_dumps()
-        print 'pickle.dumps', result
+        print('pickle.dumps', result)
         yield 'pickle.dumps', result
 
     tests = [
@@ -124,7 +128,7 @@ if __name__=='__main__':
         (name, tuple(test_time(size, stop))) for name, size, stop in tests]
     lines_size = [
         (name, tuple(test_size(size, stop))) for name, size, stop in tests]
-    print 'Total test running time {0:.3f} seconds'.format(time()-start)
+    print('Total test running time {0:.3f} seconds'.format(time()-start))
     from protocyt.classes import ENVIRONMENT
     root = path.Path.from_file(__file__).up()
     template_file = root / 'result.template'
@@ -149,9 +153,9 @@ if __name__=='__main__':
 
     with result_file.open('wb') as stream:
         stream.write(template.render(
-            results_time=sorted(results_time.iteritems(), key=itemgetter(0)),
+            results_time=sorted(results_time.items(), key=itemgetter(0)),
             bars_time=bars_time,
-            results_size=sorted(results_size.iteritems(), key=itemgetter(0)),
+            results_size=sorted(results_size.items(), key=itemgetter(0)),
             bars_size=bars_size,
             output=str(sys.stdout),
             ))

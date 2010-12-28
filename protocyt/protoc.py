@@ -1,3 +1,4 @@
+from __future__ import print_function
 # standart
 import sys
 import tempfile
@@ -83,8 +84,8 @@ def from_source(source,
 
     protocol_data = protocol.data()
 
-    source_chks = hashlib.sha1(source).hexdigest()
-    protoc_chks = hashlib.sha1(protocol_data).hexdigest()
+    source_chks = hashlib.sha1(source.encode('utf-8')).hexdigest()
+    protoc_chks = hashlib.sha1(protocol_data.encode('utf-8')).hexdigest()
     if out_file.exists():
         if check:
             checkfile_name = (output_dir / name).add_ext('.checksum')
@@ -94,7 +95,8 @@ def from_source(source,
                     output_ctrl = stream.readline().strip()
                     protoc_ctrl = stream.readline().strip()
                 with out_file.open('rb') as stream:
-                    output_chks = hashlib.sha1(stream.read()).hexdigest()
+                    output_data = stream.read()
+                    output_chks = hashlib.sha1(output_data).hexdigest()
                 if (source_chks == source_ctrl
                 and output_chks == output_ctrl
                 and protoc_chks == protoc_ctrl):
@@ -108,7 +110,7 @@ def from_source(source,
 
     path = temp_dir / name
     pyx_file = path.add_ext('.pyx')
-    with pyx_file.open('wb') as stream:
+    with pyx_file.open('w') as stream:
         stream.write(protocol_data)
 
     options = CompilationOptions(
@@ -185,7 +187,7 @@ def package_from_file(filename, output_dir=None, debug=False):
     with open(proto_file.str(), 'wt') as stream:
         stream.write(source)
 
-    from classes import ENVIRONMENT
+    from .classes import ENVIRONMENT
     template = ENVIRONMENT.get_template('package.pytempl')
 
     package_file = output_dir / '__init__.py'
@@ -209,7 +211,7 @@ def main(options):
                             debug=options.debug,
                             )
         if options.keep:
-            print 'Temporary files places at {0:s}'.format(result)
+            print('Temporary files places at {0:s}'.format(result))
 
 def make_parser():
     import argparse

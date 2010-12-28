@@ -4,10 +4,13 @@ Holding Path class.
 
 # standart
 import os
-import urlparse
 import os.path
 import glob
 import shutil
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 # internal
 from .templatable import DocTemplatable
 
@@ -55,14 +58,14 @@ class Path(object):
         self.prefix = kwargs.pop('prefix', '')
         self.segments = []
         for part in paths:
-            if isinstance(part, basestring):
+            if isinstance(part, str):
                 part = part.split('/')
             elif hasattr(part, '__iter__'):
                 pass
             else:
                 raise self.InvalidPartError(part)
             for segment in part:
-                if not isinstance(segment, basestring):
+                if not isinstance(segment, str):
                     raise self.SegmentTypeError(part)
                 if segment   == '..':
                     self.segments.pop()
@@ -93,7 +96,7 @@ class Path(object):
             return False
         return (self.prefix==other.prefix) and (self.segments==other.segments)
 
-    def __div__(self, name):
+    def __truediv__(self, name):
         """
         Allows to construct Path by dividing several Paths.
         New instance ot Path class will be obtained as the result of each
@@ -111,6 +114,7 @@ class Path(object):
             '/a/b/c/d/e/f/g/h'
         """
         return self.__class__(self.segments, name, prefix=self.prefix)
+    __div__ = __truediv__
 
     def __getitem__(self, names):
         """
@@ -231,11 +235,12 @@ class Path(object):
         name, _ = os.path.splitext(self.segments[-1])
         return name
 
-    def __nonzero__(self):
+    def __bool__(self):
         """
         Checks Path instance to be empty.
         """
         return bool(self.segments)
+    __nonzero__ = __bool__
 
     def __repr__(self):
         """

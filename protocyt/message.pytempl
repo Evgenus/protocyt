@@ -48,7 +48,7 @@ cdef inline void serialize_${this.fullname}(object array, object self):
 
     % elif field.kind == 'optional':
 
-    if self.${field.name} != ${field.get_default_value(state)}:
+    if getattr(self, "${field.name}", ${field.get_default_value(state)}) != ${field.get_default_value(state)}:
         serialize_type(array, ${field.get_tag(state)}, ${field.index})
         % if field.type in field.TYPE_TAG:
         serialize_${field.type}(array, self.${field.name})
@@ -114,7 +114,9 @@ cdef object deserialize_${this.fullname}(char **pointer, char *end, ${message_ex
     self.${field.name} = []
 % endfor
 % for number, field in this.fields_optional:
+% if field.get_default_value(state) != None:
     self.${field.name} = ${field.get_default_value(state)}
+% endif
 % endfor
     ${signal('enter', repr(this.fullname))}
     while pointer[0]<end:

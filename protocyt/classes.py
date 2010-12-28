@@ -9,9 +9,12 @@ from textwrap import dedent
 from collections import deque
 import functools
 from heapq import heappush, heappop
-import __builtin__
 import warnings
 import weakref
+try:
+    import __builtin__ as builtins
+except ImportError:
+    import builtins
 # external
 import jinja2
 # internal
@@ -172,7 +175,7 @@ class Part(object):
             )
     def title(self, char, text, size=80):
         length = len(text)
-        first = (size - length)/2 - 3
+        first = int((size - length)/2 - 3)
         last = size - 6 - first - length
         return '# ' + (char*first) + ' ' + text + ' ' + (char*last) + ' #'
 
@@ -181,7 +184,7 @@ class Part(object):
             this=self,
             state=state,
             functools=functools,
-            **__builtin__.__dict__)
+            **builtins.__dict__)
 
 class Extension(object):
     def __init__(self, start, end=None):
@@ -232,10 +235,10 @@ class Compound(Part):
             return False
 
     def pretty(self, state):
-        for name, message in self.messages.iteritems():
+        for name, message in self.messages.items():
             for part in message.pretty(state):
                 yield self.indent1(part)
-        for name, enum in self.enums.iteritems():
+        for name, enum in self.enums.items():
             for part in enum.pretty(state):
                 yield self.indent1(part)
 
@@ -293,7 +296,7 @@ class Message(Compound):
             this=self,
             state=state,
             functools=functools,
-            **__builtin__.__dict__)
+            **builtins.__dict__)
         state.pop_ns()
         return result
 
@@ -304,7 +307,7 @@ class Message(Compound):
     def pretty(self, state):
         yield 'Message: {name}'.format(**self.__dict__)
         state.push_ns(self.name)
-        for name, field in self.fields_by_name.iteritems():
+        for name, field in self.fields_by_name.items():
             for part in field.pretty(state):
                 yield self.indent1(part)
         for part in super(Message, self).pretty(state):
