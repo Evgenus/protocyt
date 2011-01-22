@@ -81,3 +81,6 @@ class ${this.fullname}(BaseMessage):
 % for name, message in this.messages.items():
     ${name} = ${message.fullname}
 % endfor
+
+${this.fullname}.DecodeError = DecodeError
+${this.fullname}.EncodeError = EncodeError

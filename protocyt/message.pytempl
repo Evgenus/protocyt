@@ -182,5 +182,5 @@ cdef object wrapped_deserialize_${this.fullname}(object array, ${message_extra_a
         result = deserialize_${this.fullname}(&buff, buff + size, ${message_extra_args(state)})
     except InternalDecodeError as error:
         pointer = PyLong_FromUnsignedLongLong(<uint64_t>start)
-        raise DecodeError(error.args[0] - start, error.args[1])
+        raise DecodeError(error.args[0] - pointer, error.args[1])
     return result
