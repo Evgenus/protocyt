@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='protocyt',
-    version='0.1.3',
+    version='0.1.4',
     description="Fast python port of protobuf",
     long_description="Compiles protobuf files into python extension modules using cython",
     classifiers=[
