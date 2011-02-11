@@ -25,10 +25,7 @@ __all__ = [
     'make_parser',
     ]
 
-try:
-    import sysconfig
-except ImportError:
-    from distutils import sysconfig
+from distutils import sysconfig
 
 class NoProtocolDefined(DocTemplatable, RuntimeError):
     'Single protocol should be defined in source, but {0} was found'
