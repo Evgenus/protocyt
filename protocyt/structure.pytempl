@@ -42,9 +42,18 @@ class ${this.fullname}(BaseMessage):
     def serialize(self, array):
         serialize_${this.fullname}(array, self)
 
+    def dumps(self):
+        array = bytearray()
+        serialize_${this.fullname}(array, self)
+        return array
+
     def deserialize(cls, array, ${message_extra_args(state)}):
         return wrapped_deserialize_${this.fullname}(array, ${message_extra_args(state)})
     deserialize = classmethod(deserialize)
+
+    def loads(cls, array, ${message_extra_args(state)}):
+        return wrapped_deserialize_${this.fullname}(array, ${message_extra_args(state)})
+    loads = classmethod(loads)
 
     def __eq__(self, other_msg):
         return (isinstance(other_msg, ${this.fullname})
