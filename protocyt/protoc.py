@@ -4,6 +4,7 @@ import sys
 import tempfile
 import hashlib
 import distutils.ccompiler
+from distutils import sysconfig
 from lib2to3.pgen2.parse import ParseError
 from Cython.Compiler.Main import compile as cython_compile, CompilationOptions
 # internal
@@ -25,7 +26,6 @@ __all__ = [
     'make_parser',
     ]
 
-from distutils import sysconfig
 
 class NoProtocolDefined(DocTemplatable, RuntimeError):
     'Single protocol should be defined in source, but {0} was found'
@@ -116,6 +116,7 @@ def from_source(source,
     cython_compile(pyx_file.str(), options=options)
 
     compiler = distutils.ccompiler.new_compiler(verbose=1)
+    sysconfig.customize_compiler(compiler)
 
     if sys.platform == 'win32':
         protocyt_dir = Path.from_file(__file__).up()
@@ -123,7 +124,6 @@ def from_source(source,
         libs_dir = Path.from_file(sysconfig.get_config_var('BINDIR')) / 'libs'
         compiler.add_library_dir(libs_dir.str())
 
-    python_path = Path.from_file(sys.exec_prefix)
     compiler.add_include_dir(sysconfig.get_python_inc())
 
     object_files = compiler.compile([path.add_ext('.c').str()],

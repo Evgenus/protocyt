@@ -114,8 +114,12 @@ class CodeGenerator(TreeVisitor):
         fieldTail: type indent "=" NUMBER [ "[" fieldOption ( "," fieldOption )* "]" ] ";"
         '''
         type, name, index, options = itail(self.visit(*node.children), 3)
-        options = dict(unchain(options, 2))
+        options = dict(options)
         yield classes.Field(index, name, type, options)
+
+    def on_fieldOption(self, node):
+        name, value = self.visit(*node.children)
+        yield name, value
 
     def on_extension(self, node):
         '''

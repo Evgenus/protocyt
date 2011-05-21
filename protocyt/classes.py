@@ -250,7 +250,7 @@ class Message(Compound):
     structure = ENVIRONMENT.get_template('structure.pytempl')
     tag = 'message'
     max_index = 0
-    fullname = None
+    _fullname = None
     location = lambda : None
     def __init__(self, name, doc):
         self.name = name
@@ -263,6 +263,12 @@ class Message(Compound):
         self.extensions = []
         self.extended_fields = dict()
         super(Message, self).__init__()
+
+    @property
+    def fullname(self):
+        if self._fullname:
+            return self._fullname
+        return self.name
 
     def set_field(self, field):
         heappush(getattr(self, 'fields_'+field.kind), (field.index, field))
@@ -285,7 +291,7 @@ class Message(Compound):
     def render(self, state):
         self.compile_extensions()
         state.push_ns(self.name)
-        self.fullname = state.get_ns()
+        self._fullname = state.get_ns()
         result = super(Message, self).render(state)
         state.pop_ns()
         return result
