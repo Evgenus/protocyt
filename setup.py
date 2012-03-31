@@ -1,7 +1,13 @@
-from distutils.core import setup
+from setuptools import setup
+
+install_requires=[
+    'cython >= 0.13',
+    'jinja2 >= 2.5',
+    'argparse',
+    ]
 
 setup(name='protocyt',
-    version='0.1.4',
+    version='0.1.5',
     description="Fast python port of protobuf",
     long_description="Compiles protobuf files into python extension modules using cython",
     classifiers=[
@@ -17,6 +23,7 @@ setup(name='protocyt',
     url='http://evgenus.github.com/protocyt/',
     license='LGPL',
     packages=['protocyt'],
+    install_requires=install_requires,
     package_data=dict(
         protocyt = [
             'ProtobufGrammar.txt',
