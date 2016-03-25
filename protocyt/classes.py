@@ -30,6 +30,7 @@ __all__ = [
     'Extension',
     'Compound',
     'Message',
+    'Group',
     'Protocol',
     ]
 
@@ -106,6 +107,7 @@ class Field(object):
         makedict('int32,int64,uint32,uint64,sint32,sint64,bool,enum', 0),
         makedict('fixed64,sfixed64,double', 1),
         makedict('string,bytes,message', 2),
+        makedict('group', 3),
         makedict('fixed32,sfixed32,float', 5),
         )
     def __init__(self, index, name, type, options):
@@ -274,7 +276,7 @@ class Message(Compound):
         heappush(getattr(self, 'fields_'+field.kind), (field.index, field))
         self.max_index = max(self.max_index, field.index)
         self.fields_by_index[field.index] = field
-        self.fields_by_name[field.name] = field
+        self.fields_by_name[field.name[0].lower()+field.name[1:]] = field
 
     def add_extension(self, extension):
         self.extensions.append(extension)
@@ -313,6 +315,92 @@ class Message(Compound):
     def pretty(self, state):
         yield 'Message: {name}'.format(**self.__dict__)
         state.push_ns(self.name)
+        for name, field in self.fields_by_name.items():
+            for part in field.pretty(state):
+                yield self.indent1(part)
+        for part in super(Message, self).pretty(state):
+            yield part
+        state.pop_ns()
+
+class Group(Message):
+    '''
+    Represents single group
+    '''
+    TYPE_TAG = mergedicts(
+        makedict('int32,int64,uint32,uint64,sint32,sint64,bool,enum', 0),
+        makedict('fixed64,sfixed64,double', 1),
+        makedict('string,bytes,message', 2),
+        makedict('group', 3),
+        makedict('fixed32,sfixed32,float', 5),
+    )
+    tag = 'group'
+    def __init__(self, index, name, doc):
+        self.index = int(index)
+        self.name = name
+        self.doc = doc
+        self.type = name
+        self.fields_repeated = []
+        self.fields_required = []
+        self.fields_optional = []
+        self.fields_by_name = {}
+        self.fields_by_index = {}
+        self.options = {}
+        self.extensions = []
+        self.extended_fields = dict()
+        super(Message, self).__init__()
+
+    def render(self, state):
+        self.compile_extensions()
+        state.push_ns(self.name)  # add index here?
+        self._fullname = state.get_ns()
+        result = super(Message, self).render(state)
+        state.pop_ns()
+        return result
+
+    def get_tag(self, state):
+        return 3
+
+    def render_structure(self, state):
+        state.push_ns(self.name)  # add index here?
+        result = self.structure.render(
+            this=self,
+            state=state,
+            functools=functools,
+            **builtins.__dict__)
+        state.pop_ns()
+        return result
+
+    def set(self, where):
+        where.set_field(self)
+        self.location = weakref.ref(where)
+        where.set_message(self)
+
+    def is_packed(self, state):
+        return False
+
+    def get_special_options(self, state):
+        number = 0
+        if self.kind == 'repeated' and not self.is_packed(state):
+            number |= 1
+        return number
+
+    def get_default_value(self, state):
+        return self.options.get('default', None)
+
+    def get_deserializer_name(self, state):
+        if self.type in self.TYPE_TAG:
+            decoder_name = self.type
+        else:
+            decoder_name = state.find_name(self.type).fullname
+
+        if self.kind == 'repeated' and self.is_packed(state):
+            return 'repeat_deserialize_' + decoder_name
+        else:
+            return 'deserialize_' + decoder_name
+
+    def pretty(self, state):
+        yield 'Message: {name}'.format(**self.__dict__)
+        state.push_ns(self.name)  # add index here?
         for name, field in self.fields_by_name.items():
             for part in field.pretty(state):
                 yield self.indent1(part)

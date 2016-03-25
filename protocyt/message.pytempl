@@ -16,19 +16,22 @@ cdef inline void serialize_${this.fullname}(object array, object self):
     serialize_type(array, ${field.get_tag(state)}, ${field.index})
         % if field.type in field.TYPE_TAG:
     serialize_${field.type}(array, self.${field.name})
+        % elif field.tag == "group":
+    serialize_${state.find_name(field.type).fullname}(array, self.${field.name[0].lower()+field.name[1:]})
         % else:
             % set message = state.find_name(field.type)
     serialize_with_length_${message.fullname}(array, self.${field.name})
         % endif
 
     % elif field.kind == 'repeated':
-
         % if field.is_packed(state):
     serialize_type(array, 2, ${field.index}) # 2 is for packed repeated types
     field_buff = bytearray()
-    for item in self.${field.name}:
+    for item in self.${field.name[0].lower()+field.name[1:]}:
             % if field.type in field.TYPE_TAG:
         serialize_${field.type}(field_buff, item)
+            % elif field.tag == "group":
+        serialize_${state.find_name(field.type).fullname}(array, self.${field.name[0].lower()+field.name[1:]})
             % else:
                 % set message = state.find_name(field.type)
         serialize_with_length_${message.fullname}(field_buff, item)
@@ -36,25 +39,35 @@ cdef inline void serialize_${this.fullname}(object array, object self):
     serialize_uint64(array, PyByteArray_GET_SIZE(field_buff))
     PySequence_InPlaceConcat(array, field_buff)
         % else
-    for item in self.${field.name}:
+    for item in self.${field.name[0].lower()+field.name[1:]}:
         serialize_type(array, ${field.get_tag(state)}, ${field.index})
             % if field.type in field.TYPE_TAG:
         serialize_${field.type}(array, item)
+            % elif field.tag == "group":
+        serialize_${state.find_name(field.type).fullname}(array, item)
             % else:
                 % set message = state.find_name(field.type)
         serialize_with_length_${message.fullname}(array, item)
+            % endif
+            % if field.get_tag(state) == 3:
+        serialize_type(array, 4, ${field.index})
             % endif
         % endif
 
     % elif field.kind == 'optional':
 
-    if getattr(self, "${field.name}", ${field.get_default_value(state)}) != ${field.get_default_value(state)}:
+    if getattr(self, "${field.name[0].lower()+field.name[1:]}", ${field.get_default_value(state)}) != ${field.get_default_value(state)}:
         serialize_type(array, ${field.get_tag(state)}, ${field.index})
         % if field.type in field.TYPE_TAG:
         serialize_${field.type}(array, self.${field.name})
+        % elif field.tag == "group":
+        serialize_${state.find_name(field.type).fullname}(array, self.${field.name[0].lower()+field.name[1:]})
         % else:
             % set message = state.find_name(field.type)
         serialize_with_length_${message.fullname}(array, self.${field.name})
+        % endif
+        % if field.get_tag(state) == 3:
+        serialize_type(array, 4, ${field.index})
         % endif
 
     % endif
@@ -83,7 +96,7 @@ __table_${this.fullname}[${index}] = ${decoder}
 cdef char *__names_${this.fullname}[${this.max_index+1}]
     % for index in range(0, this.max_index+1):
         % if index in this.fields_by_index:
-__names_${this.fullname}[${index}] = "${this.fields_by_index[index].name}"
+__names_${this.fullname}[${index}] = "${this.fields_by_index[index].name[0].lower()+this.fields_by_index[index].name[1:]}"
         % else:
 __names_${this.fullname}[${index}] = NULL
         % endif
@@ -100,8 +113,8 @@ __special_${this.fullname}[${index}] = 0
 
 
 cdef object deserialize_${this.fullname}(char **pointer, char *end, ${message_extra_args(state)}):
-    cdef uint64_t n, t, size
-    cdef uint32_t type
+    cdef uint64_t n, t, size, temp_t
+    cdef uint32_t type, temp_type
     cdef object self = object.__new__(${this.fullname})
     cdef char *other_start
     cdef parsefunc decoder
@@ -111,7 +124,7 @@ cdef object deserialize_${this.fullname}(char **pointer, char *end, ${message_ex
 % endif
 
 % for index, field in this.fields_repeated:
-    self.${field.name} = []
+    self.${field.name[0].lower()+field.name[1:]} = []
 % endfor
 % for number, field in this.fields_optional:
 % if field.get_default_value(state) != None:
@@ -139,6 +152,14 @@ cdef object deserialize_${this.fullname}(char **pointer, char *end, ${message_ex
                     if pointer[0] + size > end:
                         raise makeDecodeError(pointer[0], "Lengts of field at [{0}] goes outside message `${this.fullname}` boundaries")
                     value = decoder(pointer, pointer[0] + size, ${message_extra_args(state)})
+                elif t == 3:
+                    value = decoder(pointer, end)
+                elif t == 4:
+                % if this.tag == "group":
+                    return self
+                % else:
+                    pass
+                % endif
                 else:
                     value = decoder(pointer, end, ${message_extra_args(state)})
                 if __special_${this.fullname}[n] == 1: # unpacked repeated
@@ -151,12 +172,20 @@ cdef object deserialize_${this.fullname}(char **pointer, char *end, ${message_ex
         if t>5:
             raise makeDecodeError(pointer[0], "Invalid field tag at [{0}]")
         decoder = __decoder_bytype[t]
+        if t == 4:
+        % if this.tag == "group":
+            return self
+        % else:
+            pass
+        % endif
         if decoder == NULL:
             raise makeDecodeError(pointer[0], "Can't deserialize field by default deserializer at [{0}] for message `${this.fullname}`")
         if t == 2:
             if raw_deserialize_uint64(pointer, end, &size):
                 raise makeDecodeError(pointer[0], "Can't deserialize lengts of field at [{0}] for message `${this.fullname}`")
             decoder(pointer, pointer[0] + size, ${message_extra_args(state)})
+        elif t == 3:
+            value = decoder(pointer, end)
         else:
             decoder(pointer, end, ${message_extra_args(state)})
     ${signal('exit', repr(this.fullname))}

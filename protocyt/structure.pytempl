@@ -5,37 +5,37 @@ ${this.messages[message].render_structure(state)}
 % from 'common.pytempl' import message_extra_args with context
 
 class ${this.fullname}(BaseMessage):
-    __slots__ = ${repr(tuple(this.fields_by_name))}
+    #__slots__ = ${repr(tuple(this.fields_by_name))}
     _extended_fields_ = ${repr(set(this.extended_fields))}
 % for number, field in this.fields_optional:
 % if field.get_default_value(state) != None:
-    ${field.name} = ${field.get_default_value(state)}
+    ${field.name[0].lower()+field.name[1:]} = ${field.get_default_value(state)}
 % endif
 % endfor
 
     def __init__(self,
 % for number, field in this.fields_required:
-        ${field.name}, # ${''.join(field.pretty(state))}
+        ${field.name[0].lower()+field.name[1:]}, # ${''.join(field.pretty(state))}
 % endfor
 % for number, field in this.fields_repeated:
-        ${field.name}=None, # ${''.join(field.pretty(state))}
+        ${field.name[0].lower()+field.name[1:]}=None, # ${''.join(field.pretty(state))}
 % endfor
 % for number, field in this.fields_optional:
-        ${field.name}=${field.get_default_value(state)}, # ${''.join(field.pretty(state))}
+        ${field.name[0].lower()+field.name[1:]}=${field.get_default_value(state)}, # ${''.join(field.pretty(state))}
 % endfor
         ):
 % for index, field in this.fields_required:
-        self.${field.name} = ${field.name}
+        self.${field.name[0].lower()+field.name[1:]} = ${field.name[0].lower()+field.name[1:]}
 % endfor
 % for index, field in this.fields_repeated:
-        if ${field.name} is None:
-            self.${field.name} = []
+        if ${field.name[0].lower()+field.name[1:]} is None:
+            self.${field.name[0].lower()+field.name[1:]} = []
         else:
-            self.${field.name} = ${field.name}
+            self.${field.name[0].lower()+field.name[1:]} = ${field.name[0].lower()+field.name[1:]}
 % endfor
 % for number, field in this.fields_optional:
-        if ${field.name} != ${field.get_default_value(state)}:
-            self.${field.name} = ${field.name}
+        if ${field.name[0].lower()+field.name[1:]} != ${field.get_default_value(state)}:
+            self.${field.name[0].lower()+field.name[1:]} = ${field.name[0].lower()+field.name[1:]}
 % endfor
         pass
 
@@ -58,29 +58,29 @@ class ${this.fullname}(BaseMessage):
     def __eq__(self, other_msg):
         return (isinstance(other_msg, ${this.fullname})
 % for index, field in this.fields_required:
-            and self.${field.name} == other_msg.${field.name}
+            and self.${field.name[0].lower()+field.name[1:]} == other_msg.${field.name[0].lower()+field.name[1:]}
 % endfor
 % for index, field in this.fields_repeated:
-            and self.${field.name} == other_msg.${field.name}
+            and self.${field.name[0].lower()+field.name[1:]} == other_msg.${field.name[0].lower()+field.name[1:]}
 % endfor
 % for number, field in this.fields_optional:
-            and getattr(self, "${field.name}", ${field.get_default_value(state)}) == getattr(other_msg, "${field.name}", ${field.get_default_value(state)})
+            and getattr(self, "${field.name[0].lower()+field.name[1:]}", ${field.get_default_value(state)}) == getattr(other_msg, "${field.name[0].lower()+field.name[1:]}", ${field.get_default_value(state)})
 % endfor
             )
 
     def __getstate__(self):
         positional = (
 % for index, field in this.fields_required:
-            self.${field.name},
+            self.${field.name[0].lower()+field.name[1:]},
 % endfor
 % for index, field in this.fields_repeated:
-            self.${field.name},
+            self.${field.name[0].lower()+field.name[1:]},
 % endfor
             )
         optional = {}
 % for number, field in this.fields_optional:
-        if hasattr(self, "${field.name}"):
-            optional["${field.name}"] = self.${field.name}
+        if hasattr(self, "${field.name[0].lower()+field.name[1:]}"):
+            optional["${field.name[0].lower()+field.name[1:]}"] = self.${field.name[0].lower()+field.name[1:]}
 % endfor
         return positional, optional
 
