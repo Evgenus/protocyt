@@ -5,7 +5,7 @@ ${this.messages[message].render_structure(state)}
 % from 'common.pytempl' import message_extra_args with context
 
 class ${this.fullname}(BaseMessage):
-    #__slots__ = ${repr(tuple(this.fields_by_name))}
+    __slots__ = ${repr(tuple(this.fields_by_name))}
     _extended_fields_ = ${repr(set(this.extended_fields))}
 % for number, field in this.fields_optional:
 % if field.get_default_value(state) != None:
