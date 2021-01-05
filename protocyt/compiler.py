@@ -137,11 +137,22 @@ class CodeGenerator(TreeVisitor):
     def on_groupOrField(self, node):
         '''
         groupOrField: label (groupTail | fieldTail)
-        groupTail: "group" indent "=" NUMBER messageBody
         '''
         label, child = self.visit(*node.children)
         child.kind = label
         yield child
+
+    def on_groupTail(self, node):
+        '''
+        groupTail: "group" indent "=" NUMBER messageBody
+        messageBody: "{" ( enum | message | extend | extensions | groupOrField | option | ";" )* "}"
+        '''
+        name, index, children = itail(self.visit(*node.children), 2)
+        code = dedent(str(node).strip().replace('#//', '//'))
+        message = classes.Group(index, name, code)
+        for child in children:
+            child.set(message)
+        yield message
 
     def on_intlit(self, node):
         value = float(str(node))
